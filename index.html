@@ -692,27 +692,29 @@
   .workspace {
     flex: 1;
     min-height: 0;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(300px, 32%) minmax(0, 1fr);
   }
 
-  .workspace-bottom {
-    flex: 0 0 36%;
-    min-height: 180px;
-    max-height: 42vh;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(210px, 280px);
-    border-top: 1px solid var(--border);
+  .workspace-side {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid var(--border);
   }
 
   @media (max-width: 1024px) {
-    .workspace-bottom {
+    .workspace {
       grid-template-columns: 1fr;
-      max-height: none;
-      flex: 0 1 46%;
+      grid-template-rows: minmax(280px, 1.15fr) minmax(260px, 1fr);
     }
-    .workspace .pane {
+    .workspace-side {
       border-right: none;
+      border-top: 1px solid var(--border);
+    }
+    .pane-preview {
+      order: -1;
     }
   }
 
@@ -724,15 +726,14 @@
   }
 
   .pane-preview {
-    flex: 1;
-    min-height: 220px;
-    border-right: none;
+    min-width: 0;
+    min-height: 0;
   }
 
   .pane-input {
-    border-right: 1px solid var(--border);
-    height: 100%;
-    min-height: 0;
+    flex: 1 1 56%;
+    min-height: 140px;
+    border-bottom: 1px solid var(--border);
     overflow: hidden;
   }
 
@@ -769,9 +770,8 @@
 
   .pane-layers {
     background: #181818;
-    min-width: 180px;
-    height: 100%;
-    min-height: 0;
+    flex: 1 1 44%;
+    min-height: 220px;
     overflow: hidden;
     user-select: none;
   }
@@ -943,12 +943,12 @@
   }
 
   .layer-inspector {
-    padding: 6px 10px 8px;
+    padding: 8px 10px;
     background: #141414;
     border-top: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
     flex-shrink: 0;
   }
 
@@ -1009,10 +1009,10 @@
   }
 
   .inspector-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
-    margin-top: 0;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 2px;
   }
 
   .btn-xs {
@@ -1063,6 +1063,30 @@
     line-height: 1.45;
   }
 
+  .preview-title-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .preview-fit-toggle {
+    font-size: 11px;
+    font-weight: 700;
+    color: #d4fced;
+    background: var(--accent-dark);
+    border: 1px solid var(--accent-border);
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+    line-height: 1.3;
+  }
+
+  .preview-fit-toggle:hover {
+    background: var(--accent-dark-hover);
+  }
+
   .preview-scale-badge {
     font-size: 11px;
     font-weight: 700;
@@ -1085,7 +1109,13 @@
     background:
       linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0)),
       #1a1a1a;
-    padding: 16px;
+    padding: 12px;
+  }
+
+  .preview-outer.is-actual-size {
+    overflow: auto;
+    align-items: flex-start;
+    justify-content: flex-start;
   }
 
   .canvas-fit-slot {
@@ -1449,13 +1479,12 @@
   }
 
   @media (max-width: 900px) {
-    .workspace-bottom {
-      grid-template-columns: 1fr;
+    .workspace {
+      grid-template-rows: minmax(220px, 1fr) minmax(280px, 1.05fr);
     }
 
-    .pane-input {
-      border-right: none;
-      border-bottom: 1px solid var(--border);
+    .workspace-side {
+      border-top: 1px solid var(--border);
     }
 
     textarea {
@@ -1649,31 +1678,7 @@
   </div>
 
   <main class="workspace">
-    <section class="pane pane-preview">
-      <div class="pane-title pane-title-flex">
-        <span>Preview</span>
-        <span id="previewScaleBadge" class="preview-scale-badge">Fit 100%</span>
-      </div>
-      <div id="previewOuter" class="preview-outer">
-        <div id="canvasFitSlot" class="canvas-fit-slot">
-          <div id="canvasFitFrame" class="canvas-fit-frame">
-            <div id="canvasStage" class="canvas-stage">
-              <div id="backgroundLayerDom" class="background-layer">
-                <img id="backgroundImage" alt="" />
-                <div id="backgroundVignetteOverlay" class="background-vignette-overlay" style="display: none;"></div>
-                <div id="backgroundGrainOverlay" class="background-grain-overlay" style="display: none;"></div>
-              </div>
-              <div id="overlayLayersContainer" class="overlay-layers-container"></div>
-              <div id="preview" class="preview-box"></div>
-              <img id="jpegPreviewImage" class="jpeg-preview-layer" alt="" />
-              <div id="selectionBox" class="selection-box-overlay"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="workspace-bottom">
+    <div class="workspace-side">
     <section class="pane pane-input">
       <div class="pane-title">Input</div>
       <textarea id="input" spellcheck="false" placeholder="Paste a GTA RP chatlog here. Timestamps are hidden. Color codes like !{#D1D1D1} are supported.">[18:42:03] !{#D1D1D1}Carl Johnson says: We hitting Grove in ten.
@@ -1735,6 +1740,33 @@
       </div>
     </section>
     </div>
+
+    <section class="pane pane-preview">
+      <div class="pane-title pane-title-flex">
+        <span>Preview</span>
+        <div class="preview-title-meta">
+          <button type="button" id="previewFitToggle" class="preview-fit-toggle" title="Fit the canvas in view, or show actual size">Fit</button>
+          <span id="previewScaleBadge" class="preview-scale-badge">600 × 600</span>
+        </div>
+      </div>
+      <div id="previewOuter" class="preview-outer">
+        <div id="canvasFitSlot" class="canvas-fit-slot">
+          <div id="canvasFitFrame" class="canvas-fit-frame">
+            <div id="canvasStage" class="canvas-stage">
+              <div id="backgroundLayerDom" class="background-layer">
+                <img id="backgroundImage" alt="" />
+                <div id="backgroundVignetteOverlay" class="background-vignette-overlay" style="display: none;"></div>
+                <div id="backgroundGrainOverlay" class="background-grain-overlay" style="display: none;"></div>
+              </div>
+              <div id="overlayLayersContainer" class="overlay-layers-container"></div>
+              <div id="preview" class="preview-box"></div>
+              <img id="jpegPreviewImage" class="jpeg-preview-layer" alt="" />
+              <div id="selectionBox" class="selection-box-overlay"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <div class="bottom-actions-panel" id="actionsPanel">
@@ -1861,6 +1893,7 @@
   const canvasFitFrame = document.getElementById("canvasFitFrame");
   const canvasStage = document.getElementById("canvasStage");
   const previewScaleBadge = document.getElementById("previewScaleBadge");
+  const previewFitToggle = document.getElementById("previewFitToggle");
   const fontFamilySelect = document.getElementById("fontFamilySelect");
   const fontSize = document.getElementById("fontSize");
   const outlineStyleSelect = document.getElementById("outlineStyleSelect");
@@ -1999,6 +2032,7 @@
 
   let textOffsetX = DEFAULT_TEXT_OFFSET_X;
   let textOffsetY = DEFAULT_TEXT_OFFSET_Y;
+  let previewFitToView = true;
 
   let dragMode = null;
   let dragStartX = 0;
@@ -2690,19 +2724,24 @@
       const padY = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
       const availW = Math.max(40, previewOuter.clientWidth - padX);
       const availH = Math.max(40, previewOuter.clientHeight - padY);
-      const scale = Math.min(1, availW / Math.max(1, width), availH / Math.max(1, height));
+      const fitScale = Math.min(1, availW / Math.max(1, width), availH / Math.max(1, height));
+      const scale = previewFitToView ? fitScale : 1;
 
+      previewOuter.classList.toggle("is-actual-size", !previewFitToView);
       canvasFitSlot.style.width = (width * scale) + "px";
       canvasFitSlot.style.height = (height * scale) + "px";
       canvasFitFrame.style.width = width + "px";
       canvasFitFrame.style.height = height + "px";
       canvasFitFrame.style.transform = `scale(${scale})`;
 
+      if (previewFitToggle) {
+        previewFitToggle.textContent = previewFitToView ? "Fit" : "100%";
+      }
       if (previewScaleBadge) {
         const pct = Math.round(scale * 100);
         previewScaleBadge.textContent = pct >= 100
           ? `${width} × ${height}`
-          : `Fit ${pct}% · ${width} × ${height}`;
+          : `${pct}% · ${width} × ${height}`;
       }
     }
 
@@ -5347,6 +5386,13 @@
     previewFitObserver.observe(previewOuter);
   }
   window.addEventListener("resize", updateCanvasStageSize);
+
+  if (previewFitToggle) {
+    previewFitToggle.addEventListener("click", () => {
+      previewFitToView = !previewFitToView;
+      updateCanvasStageSize();
+    });
+  }
 
   // Tip Rotation Carousel
   const siteTips = [
