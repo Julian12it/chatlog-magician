@@ -1,0 +1,5340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GTA RP Chatlog Magician</title>
+<meta name="description" content="GTA roleplay chatlog magician and preview tool with multi-layer canvas support, atmosphere and cinematic filters (warm sunset, noir, contrast, vignette, film grain), server-accurate fonts, stroke & shadow styles, censor blur and redaction, clipboard image pasting, drag-and-drop screenshots, canvas export, and direct ImgBB image uploading with automatic link copying." />
+<meta property="og:title" content="GTA RP Chatlog Magician" />
+<meta property="og:description" content="GTA roleplay chatlog magician and preview tool with multi-layer canvas support, atmosphere and cinematic filters (warm sunset, noir, contrast, vignette, film grain), server-accurate fonts, stroke & shadow styles, censor blur and redaction, clipboard image pasting, drag-and-drop screenshots, canvas export, and direct ImgBB image uploading with automatic link copying." />
+<link rel="icon" type="image/svg+xml" href="clover.svg" />
+<link rel="icon" type="image/png" sizes="64x64" href="clover.png" />
+<link rel="shortcut icon" href="clover.png" />
+<link rel="apple-touch-icon" href="clover.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page-bg: #181818;
+    --panel-bg: #222;
+    --panel-bg-soft: #2b2b2b;
+    --border: #3a3a3a;
+    --text: #e8e8e8;
+    --muted: #a8a8a8;
+    --accent: #009E60;
+    --accent-hover: #00b36d;
+    --accent-dark: #004d2e;
+    --accent-dark-hover: #00663d;
+    --accent-border: #007a4a;
+    --accent-bg: rgba(0, 158, 96, 0.16);
+    --accent-glow: rgba(0, 158, 96, 0.35);
+    --chat-font-size: 14px;
+    --chat-text-padding: 8px;
+    --text-panel-width: 500px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--page-bg);
+    color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  .app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--accent-border);
+    background: linear-gradient(180deg, #005c38 0%, #003d25 100%);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .header-icon {
+    width: 22px;
+    height: 22px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  header span {
+    color: #bbf7d0;
+    font-size: 13px;
+  }
+
+  .toolbar {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    background: #121212;
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1c1c1c;
+    padding: 6px 11px;
+    border-radius: 7px;
+    border: 1px solid #2d2d2d;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-group-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #00d984;
+    user-select: none;
+    padding-right: 4px;
+    border-right: 1px solid #333333;
+    white-space: nowrap;
+  }
+
+  .toolbar-divider {
+    width: 1px;
+    height: 16px;
+    background: #333333;
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+
+  .dim-separator {
+    color: var(--muted);
+    font-size: 13px;
+    user-select: none;
+    padding: 0 1px;
+  }
+
+  .control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .control input[type="checkbox"] {
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .control select {
+    padding: 5px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: #151515;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .control select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .font-size-input,
+  .canvas-size-input,
+  .text-panel-width-input,
+  .text-padding-input,
+  .stroke-width-input {
+    width: 68px;
+    padding: 5px 7px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: #151515;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .font-size-input {
+    width: 54px;
+  }
+
+  .stroke-width-input,
+  .text-padding-input {
+    width: 54px;
+  }
+
+  input[type="file"] {
+    color: var(--muted);
+    font-size: 12px;
+    max-width: 195px;
+  }
+
+  input[type="file"]::file-selector-button {
+    background: #252525;
+    border: 1px solid #3d3d3d;
+    color: #e5e5e5;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 6px;
+    transition: all 0.15s ease;
+  }
+
+  input[type="file"]::file-selector-button:hover {
+    background: #333333;
+    border-color: #555555;
+    color: #ffffff;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn {
+    border: 1px solid transparent;
+    padding: 7px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.25;
+  }
+
+  .btn-neutral {
+    background: #272727;
+    border-color: #3e3e3e;
+    color: #f0f0f0;
+  }
+
+  .btn-neutral:hover {
+    background: #333333;
+    border-color: #555555;
+    color: #ffffff;
+  }
+
+  .btn-accent {
+    background: var(--accent-dark);
+    border-color: var(--accent);
+    color: #d4fced;
+  }
+
+  .btn-accent:hover {
+    background: var(--accent-dark-hover);
+    border-color: var(--accent-hover);
+    color: #ffffff;
+    filter: brightness(1.08);
+  }
+
+  .btn-danger {
+    background: #261919;
+    border-color: #4a2424;
+    color: #ff9b9b;
+  }
+
+  .btn-danger:hover {
+    background: #361f1f;
+    border-color: #6d2f2f;
+    color: #ffb5b5;
+  }
+
+  .btn-export {
+    background: var(--accent-dark);
+    border-color: var(--accent-border);
+    color: #d4fced;
+  }
+
+  .btn-export:hover {
+    background: var(--accent-dark-hover);
+    border-color: var(--accent);
+    color: #ffffff;
+    filter: brightness(1.08);
+  }
+
+  .btn-imgbb {
+    background: #0f4c3a;
+    border-color: #1e7e60;
+    color: #aff5db;
+    font-weight: 700;
+  }
+
+  .btn-imgbb:hover:not(:disabled) {
+    background: #15634d;
+    border-color: #29a37c;
+    color: #ffffff;
+    filter: brightness(1.1);
+  }
+
+  .btn-imgbb:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .spin-anim {
+    animation: spin 0.85s linear infinite;
+    display: inline-block;
+  }
+
+  .toast-container {
+    position: fixed;
+    bottom: 58px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    max-width: calc(100vw - 40px);
+  }
+
+  .toast {
+    pointer-events: auto;
+    background: #1a1a1a;
+    border: 1px solid #333333;
+    color: #f0f0f0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.75);
+    font-size: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 420px;
+    max-width: 100%;
+    animation: toastSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .toast.toast-success {
+    border-color: var(--accent);
+    background: #002617;
+  }
+
+  .toast.toast-error {
+    border-color: #ef4444;
+    background: #2a1414;
+  }
+
+  .toast-icon {
+    font-size: 17px;
+    flex-shrink: 0;
+    line-height: 1.2;
+  }
+
+  .toast-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .toast-title {
+    font-weight: 700;
+    margin-bottom: 3px;
+    color: #ffffff;
+    font-size: 13px;
+  }
+
+  .toast-message {
+    font-size: 12px;
+    color: #cccccc;
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  .toast-link {
+    color: #00d984;
+    text-decoration: underline;
+    font-weight: 600;
+    word-break: break-all;
+  }
+
+  .toast-link:hover {
+    color: #d4fced;
+  }
+
+  .toast-actions {
+    margin-top: 6px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .toast-copy-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .toast-copy-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .toast-close {
+    background: transparent;
+    border: none;
+    color: #888888;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .toast-close:hover {
+    color: #ffffff;
+  }
+
+  @keyframes toastSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    padding: 16px;
+    animation: fadeInModal 0.2s ease;
+  }
+
+  @keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal-dialog {
+    background: #181818;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    width: 540px;
+    max-width: 100%;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85);
+    overflow: hidden;
+    color: #e5e5e5;
+    font-size: 13px;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: #1f1f1f;
+    border-bottom: 1px solid #2e2e2e;
+  }
+
+  .modal-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .modal-body {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+
+  .modal-step {
+    background: #131313;
+    border: 1px solid #262626;
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .modal-step-number {
+    background: var(--accent-dark);
+    color: #d4fced;
+    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 12px;
+  }
+
+  .modal-step-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .modal-step-title {
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 4px;
+  }
+
+  .modal-step-desc {
+    color: #aaaaaa;
+    line-height: 1.45;
+  }
+
+  .modal-step-desc a {
+    color: #00d984;
+    text-decoration: underline;
+    font-weight: 600;
+  }
+
+  .modal-step-desc a:hover {
+    color: #d4fced;
+  }
+
+  .modal-input-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .modal-input {
+    flex: 1;
+    background: #0f0f0f;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #ffffff;
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  .modal-input:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+
+  .modal-tip-box {
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #d4fced;
+    line-height: 1.4;
+  }
+
+  .modal-footer {
+    padding: 12px 18px;
+    background: #1a1a1a;
+    border-top: 1px solid #2e2e2e;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .btn-icon-help {
+    padding: 6px 9px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    background: #202020;
+    border: 1px solid #383838;
+    color: #88d4b3;
+    cursor: pointer;
+  }
+
+  .btn-icon-help:hover {
+    background: #2a2a2a;
+    border-color: #555555;
+    color: #ffffff;
+  }
+
+  .bottom-actions-panel {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    background: #161616;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .actions-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1f1f1f;
+    padding: 7px 12px;
+    border-radius: 7px;
+    border: 1px solid #333333;
+    flex-wrap: wrap;
+  }
+
+  .actions-group-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #999999;
+    margin-right: 4px;
+    user-select: none;
+  }
+
+  .color-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .chat-color-swatch {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #555;
+    border-radius: 5px;
+    background: #111;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .chat-color-swatch::-webkit-color-swatch-wrapper {
+    padding: 2px;
+  }
+
+  .chat-color-swatch::-webkit-color-swatch {
+    border: none;
+    border-radius: 3px;
+  }
+
+  .chat-color-hex {
+    width: 78px;
+    padding: 5px 6px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: #151515;
+    color: var(--text);
+    font-family: Consolas, Monaco, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .chat-color-hex:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .action-color-select {
+    padding: 5px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: #151515;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    max-width: 150px;
+  }
+
+  .workspace {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(360px, 37%) minmax(190px, 18%) 1fr;
+    min-height: 520px;
+    align-items: stretch;
+  }
+
+  @media (max-width: 1024px) {
+    .workspace {
+      display: flex;
+      flex-direction: column;
+    }
+    .workspace .pane {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+  }
+
+  .pane {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    height: 100%;
+  }
+
+  .pane:last-child {
+    border-right: none;
+  }
+
+  .pane-title {
+    height: 42px;
+    min-height: 42px;
+    max-height: 42px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    background: var(--panel-bg-soft);
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+
+  .pane-title-flex {
+    justify-content: space-between;
+  }
+
+  .layer-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: #d4fced;
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+
+  .pane-layers {
+    background: #181818;
+    min-width: 180px;
+    user-select: none;
+  }
+
+  .layers-toolbar {
+    padding: 8px 10px;
+    background: #141414;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .layers-list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    min-height: 160px;
+  }
+
+  .layers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .layer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #1f1f1f;
+    border: 1px solid #2e2e2e;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+
+  .layer-item:hover {
+    background: #272727;
+    border-color: #3f3f3f;
+  }
+
+  .layer-item.active {
+    background: var(--accent-bg);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-glow);
+  }
+
+  .layer-visibility-btn {
+    background: none;
+    border: none;
+    color: #a0a0a0;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .layer-visibility-btn:hover {
+    color: #ffffff;
+    background: rgba(255,255,255,0.08);
+  }
+
+  .layer-visibility-btn.is-hidden {
+    color: #555555;
+    opacity: 0.6;
+  }
+
+  .layer-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: #111111;
+    border: 1px solid #333333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .layer-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .layer-thumb-icon {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .layer-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .layer-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e5e5e5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .layer-item.active .layer-name {
+    color: #86efac;
+  }
+
+  .layer-meta {
+    font-size: 10px;
+    color: #777777;
+  }
+
+  .layer-quick-reorder {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .layer-mini-btn {
+    background: #292929;
+    border: 1px solid #3d3d3d;
+    color: #b0b0b0;
+    font-size: 8px;
+    line-height: 1;
+    padding: 3px 5px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .layer-mini-btn:hover:not(:disabled) {
+    background: #3a3a3a;
+    color: #ffffff;
+    border-color: #555555;
+  }
+
+  .layer-mini-btn:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+  }
+
+  .layer-delete-btn {
+    color: #f87171;
+    background: #2b1818;
+    border: 1px solid #4a2424;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .layer-delete-btn:hover {
+    background: #422020;
+    color: #fca5a5;
+  }
+
+  .layer-inspector {
+    padding: 10px 12px;
+    background: #141414;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .inspector-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .inspector-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #888888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .inspector-type-badge {
+    font-size: 10px;
+    color: #a3a3a3;
+    background: #242424;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #333333;
+  }
+
+  .inspector-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .inspector-label {
+    width: 48px;
+    font-size: 11px;
+    color: #999999;
+  }
+
+  .inspector-slider {
+    flex: 1;
+    accent-color: var(--accent);
+    cursor: pointer;
+    height: 4px;
+  }
+
+  .inspector-val {
+    width: 36px;
+    text-align: right;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 11px;
+    color: #ffffff;
+  }
+
+  .inspector-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+
+  .btn-xs {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .btn-sm {
+    padding: 5px 9px;
+    font-size: 12px;
+  }
+
+  .overlay-layers-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .overlay-img-item {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: top left;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
+  .overlay-img-item.is-selected {
+    outline: 2px dashed var(--accent);
+    outline-offset: 1px;
+  }
+
+  textarea {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    resize: none;
+    border: none;
+    outline: none;
+    padding: 14px;
+    background: #151515;
+    color: #e8e8e8;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .preview-outer {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0)),
+      #1a1a1a;
+    padding: 18px;
+  }
+
+  .canvas-stage {
+    position: relative;
+    width: 600px;
+    height: 600px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+    cursor: default;
+  }
+
+  .canvas-stage.dragging {
+    cursor: grabbing;
+  }
+
+  .canvas-stage.drag-over {
+    outline: 2px dashed var(--accent);
+    outline-offset: -3px;
+  }
+
+  .background-layer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .background-layer img {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: top left;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
+  .background-vignette-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.45) 70%, rgba(0, 0, 0, 0.95) 100%);
+    mix-blend-mode: multiply;
+    z-index: 2;
+    transition: opacity 0.15s ease;
+  }
+
+  .background-grain-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-repeat: repeat;
+    mix-blend-mode: overlay;
+    z-index: 3;
+    transition: opacity 0.15s ease;
+  }
+
+  .jpeg-preview-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+    display: block;
+    z-index: 50;
+  }
+
+  .selection-box-overlay {
+    position: absolute;
+    pointer-events: none;
+    border: 2px dashed var(--accent);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65);
+    z-index: 60;
+    display: none;
+    box-sizing: border-box;
+    transform-origin: top left;
+  }
+
+  .preview-box {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--text-panel-width);
+    max-width: var(--text-panel-width);
+    min-height: 0;
+    font-family: var(--chat-font-family, Arial, Helvetica, sans-serif);
+    font-size: var(--chat-font-size);
+    line-height: 1.25;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: normal;
+    transform-origin: top left;
+    user-select: none;
+    overflow: hidden;
+    padding: var(--chat-text-padding);
+    box-sizing: content-box;
+  }
+
+  .line {
+    display: block;
+    min-height: 1.22em;
+  }
+
+  .blank-line {
+    background: transparent;
+  }
+
+  .text-bg {
+    display: inline;
+    padding: 0 3px;
+    background: rgba(0, 0, 0, 0.84);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    text-shadow: var(--chat-text-shadow,
+      -1px -1px 0 rgba(0,0,0,0.6),
+       1px -1px 0 rgba(0,0,0,0.6),
+      -1px  1px 0 rgba(0,0,0,0.6),
+       1px  1px 0 rgba(0,0,0,0.6));
+  }
+
+  .no-text-background .text-bg {
+    background: transparent;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .blurred-text {
+    filter: blur(var(--blur-radius, 3px));
+    display: inline-block;
+    vertical-align: baseline;
+    user-select: none;
+    -webkit-user-select: none;
+    border-radius: 2px;
+  }
+
+  .preview-box.censor-redact .blurred-text {
+    filter: none;
+    background: #000000 !important;
+    color: transparent !important;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px #000000;
+  }
+
+  .preview-box.censor-redact .blurred-text * {
+    color: transparent !important;
+    visibility: hidden;
+  }
+
+  .preview-box.censor-mosaic .blurred-text {
+    filter: blur(calc(var(--mosaic-size, 3px) * 0.35)) contrast(160%);
+    position: relative;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .timestamp {
+    color: #d8d8d8;
+  }
+
+  .say {
+    color: #f1f1f1;
+    font-weight: 700;
+  }
+
+  .low {
+    color: #d9d4d5;
+    font-weight: 700;
+  }
+
+  .lower {
+    color: #b8b4b5;
+    font-weight: 700;
+  }
+
+  .whisper {
+    color: #eda841;
+    font-weight: 700;
+  }
+
+  .shout {
+    color: #f1f1f1;
+    font-weight: 800;
+  }
+
+  .me,
+  .do,
+  .ame,
+  .text-bg .me {
+    color: #C2A2DA;
+    font-weight: 700;
+  }
+
+  .pm,
+  .phone {
+    color: #fbf724;
+    font-weight: 700;
+  }
+
+  .ooc {
+    color: #d9d4d5;
+    font-weight: 700;
+  }
+
+  .admin {
+    color: #f00000;
+    font-weight: 700;
+  }
+
+  .helper {
+    color: #3896f3;
+    font-weight: 700;
+  }
+
+  .radio {
+    color: #FEE58F;
+    font-weight: 700;
+  }
+
+  .department {
+    color: #3896f3;
+    font-weight: 700;
+  }
+
+  .ck-blue {
+    color: #3896f3;
+    font-weight: 700;
+  }
+
+  .ck-red {
+    color: #f00000;
+    font-weight: 700;
+  }
+
+  .ad,
+  .money,
+  .item {
+    color: #56d64b;
+    font-weight: 700;
+  }
+
+  .dice,
+  .inventory,
+  .system {
+    color: #ffff00;
+    font-weight: 700;
+  }
+
+  .error {
+    color: #f00000;
+    font-weight: 700;
+  }
+
+  .default {
+    color: #f1f1f1;
+    font-weight: 700;
+  }
+
+  .footer-note {
+    padding: 10px 18px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    background: #111;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 42px;
+    box-sizing: border-box;
+    user-select: none;
+  }
+
+  .tip-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 800;
+    color: #d4fced;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    background: var(--accent-dark);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .tip-carousel {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .tip-text {
+    display: inline-block;
+    color: #d1d5db;
+    opacity: 1;
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0);
+    line-height: 1.4;
+  }
+
+  .tip-text.fading {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+
+  .tip-text strong {
+    color: #f3f4f6;
+    font-weight: 600;
+  }
+
+  .tip-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .tip-nav-btn {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    color: #9ca3af;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.15s ease;
+  }
+
+  .tip-nav-btn:hover {
+    background: #2a2a2a;
+    color: #fff;
+    border-color: #555;
+  }
+
+  @media (max-width: 900px) {
+    .workspace {
+      grid-template-columns: 1fr;
+    }
+
+    .pane {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+
+    textarea {
+      min-height: 280px;
+    }
+
+    .preview-outer {
+      min-height: 360px;
+    }
+
+    .bottom-actions-panel {
+      justify-content: stretch;
+      gap: 10px;
+    }
+
+    .actions-group {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1><img src="clover.svg" alt="☘" class="header-icon" /> GTA RP Chatlog Magician</h1>
+      <span>Paste a GTA-style chatlog and preview it with in-game-like colors.</span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <span class="toolbar-group-label">Typography</span>
+      <label class="control" title="Font family">
+        Font:
+        <select id="fontFamilySelect">
+          <option value="Arial, Helvetica, sans-serif" selected>Arial </option>
+          <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+          <option value="Verdana, Geneva, sans-serif">Verdana</option>
+          <option value="'Roboto', sans-serif">Roboto</option>
+          <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="Impact, Charcoal, sans-serif">Impact</option>
+        </select>
+      </label>
+
+      <div class="toolbar-divider"></div>
+
+      <label class="control" title="Font size in pixels">
+        Size:
+        <input id="fontSize" class="font-size-input" type="number" min="8" max="72" value="14" />
+        <span>px</span>
+      </label>
+
+      <div class="toolbar-divider"></div>
+
+      <label class="control" title="Wrap width (in pixels) — cannot exceed the canvas width, so chatlog text stays inside the preview">
+        Wrap width:
+        <input id="textPanelWidthInput" class="text-panel-width-input" type="number" min="50" max="600" value="500" />
+        <span>px</span>
+      </label>
+
+      <div class="toolbar-divider"></div>
+
+      <label class="control" title="Spacing around the chatlog text box, in pixels">
+        Padding:
+        <input id="textPaddingInput" class="text-padding-input" type="number" min="0" max="80" step="1" value="8" />
+        <span>px</span>
+      </label>
+    </div>
+
+    <div class="toolbar-group">
+      <span class="toolbar-group-label">Outline & BG</span>
+      <label class="control" title="Outline / shadow styling">
+        Outline:
+        <select id="outlineStyleSelect">
+          <option value="stroke" selected>Outline </option>
+          <option value="shadow">Drop Shadow (GTA V / FiveM)</option>
+          <option value="both">Outline & Shadow</option>
+          <option value="none">None</option>
+        </select>
+      </label>
+
+      <label class="control" id="strokeWidthControl" title="Outline stroke thickness in pixels">
+        <div class="toolbar-divider"></div>
+        Thickness:
+        <input id="strokeWidthInput" class="stroke-width-input" type="number" min="0.5" max="6" step="0.5" value="1.5" />
+        <span>px</span>
+      </label>
+
+      <div class="toolbar-divider"></div>
+
+      <label class="control" title="Toggle dark background behind chat text">
+        <input id="backgroundToggle" type="checkbox" checked />
+        Dark text background
+      </label>
+    </div>
+
+    <div class="toolbar-group">
+      <span class="toolbar-group-label">Censorship</span>
+      <label class="control" title="Censorship effect for ☘blurred☘ text">
+        Style:
+        <select id="censorStyleSelect">
+          <option value="blur" selected>Gaussian Blur</option>
+          <option value="mosaic">Mosaic Blur</option>
+          <option value="redact">Redacted Black Bar</option>
+        </select>
+      </label>
+
+      <label class="control" id="blurStrengthControl" title="Blur intensity or mosaic block size">
+        <div class="toolbar-divider"></div>
+        <span id="blurStrengthLabel">Blur strength:</span>
+        <input id="blurStrengthInput" type="range" min="1" max="10" step="1" value="3" style="width: 75px;" />
+        <span id="blurStrengthValue">3px</span>
+      </label>
+    </div>
+
+    <div class="toolbar-group" id="atmosphereToolbarGroup">
+      <span class="toolbar-group-label">Atmosphere</span>
+      <label class="control" title="Cinematic color filter for the selected image layer">
+        Filter:
+        <select id="atmospherePresetSelect">
+          <option value="none" selected>Original</option>
+          <option value="sunset">🌅 Warm Sunset</option>
+          <option value="noir">🎬 Noir / B&amp;W</option>
+          <option value="contrast">⚡ High Contrast</option>
+          <option value="invert">🔄 Inverse</option>
+        </select>
+      </label>
+      <div id="filterIntensitySliderContainer" class="control" style="display: none; align-items: center; gap: 4px;" title="Fine-tune filter intensity">
+        <input id="filterIntensityInput" type="range" min="0" max="100" step="5" value="100" style="width: 55px;" title="Filter intensity" />
+        <span id="filterIntensityValue" style="font-size: 11px; color: var(--muted); min-width: 28px;">100%</span>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <label class="control" title="Toggle dark edge vignette to frame the scene">
+        <input id="vignetteToggle" type="checkbox" />
+        Vignette
+      </label>
+      <div id="vignetteSliderContainer" class="control" style="display: none; align-items: center; gap: 4px;">
+        <input id="vignetteStrengthInput" type="range" min="10" max="100" step="5" value="45" style="width: 55px;" title="Vignette darkness" />
+        <span id="vignetteStrengthValue" style="font-size: 11px; color: var(--muted); min-width: 26px;">45%</span>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <label class="control" title="Toggle 35mm photographic film grain">
+        <input id="filmGrainToggle" type="checkbox" />
+        Film Grain
+      </label>
+      <div id="filmGrainSliderContainer" class="control" style="display: none; align-items: center; gap: 4px;">
+        <input id="filmGrainStrengthInput" type="range" min="5" max="75" step="5" value="25" style="width: 50px;" title="Film grain intensity" />
+        <span id="filmGrainStrengthValue" style="font-size: 11px; color: var(--muted); min-width: 24px;">25%</span>
+      </div>
+    </div>
+
+    <div class="toolbar-group">
+      <span class="toolbar-group-label">Canvas & Frame</span>
+      <div class="control" title="Canvas dimensions in pixels (Width × Height)">
+        <span>Canvas:</span>
+        <input id="canvasWidthInput" class="canvas-size-input" type="number" min="100" max="4000" value="600" title="Canvas Width (px)" />
+        <span class="dim-separator">×</span>
+        <input id="canvasHeightInput" class="canvas-size-input" type="number" min="100" max="4000" value="600" title="Canvas Height (px)" />
+        <span>px</span>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <label class="control" title="Upload background screenshot">
+        <span>BG Canvas:</span>
+        <input id="backgroundImageInput" type="file" accept="image/*" />
+      </label>
+
+      <div class="toolbar-divider"></div>
+
+      <label class="control" title="JPEG export quality">
+        <span>JPEG Quality:</span>
+        <input id="jpegQualityInput" type="range" min="0.05" max="1" step="0.01" value="1" style="width: 75px;" />
+        <span id="jpegQualityValue">100%</span>
+      </label>
+    </div>
+
+    <div class="toolbar-group">
+      <span class="toolbar-group-label">Settings</span>
+      <button id="resetSettingsButton" type="button" class="btn btn-neutral btn-sm" title="Reset all settings to default values">
+        ↺ Reset Settings
+      </button>
+    </div>
+  </div>
+
+  <main class="workspace">
+    <section class="pane pane-input">
+      <div class="pane-title">Input</div>
+      <textarea id="input" spellcheck="false" placeholder="[22:34:29] !{#D1D1D1}Karina Vo says: 010154414.
+[22:35:01] !{#FF00C3}[!] !{#D8D8D8}Albert Kwan says (to Nathan Chang): Don't worry bout paying me back tho, blood… you just gon work for five dollars an hour.
+[22:35:20] !{#F0F0F0}Nathan Chang says (to Albert Kwan): Nah, I got your shit too. I'm not staying in debt.
+[22:35:32] !{#D8D8D8}Albert Kwan says: You good bro, don't worry bout it.
+[22:35:59] !{#C2A2DA}* Albert Kwan sits on some random ladies bumper.
+[22:36:14] !{#D1D1D1}Karina Vo says: Is it not Tiffany in there with him…?
+[22:36:24] !{#D4D4D4}Albert Kwan says: Nah, some white girl.
+[22:36:31] !{#D1D1D1}Karina Vo says: Aw. Tiff was nice…"></textarea>
+    </section>
+
+    <section class="pane pane-layers" id="layersPane">
+      <div class="pane-title pane-title-flex">
+        <span>Layers</span>
+        <span id="layersCountBadge" class="layer-badge">2 Layers</span>
+      </div>
+
+      <div class="layers-toolbar">
+        <button id="addLayerImageBtn" class="btn btn-accent btn-sm" title="Add an image layer on top of the canvas">
+          + Add Image Layer
+        </button>
+        <input type="file" id="layerImageFileInput" accept="image/*" multiple style="display: none;" />
+      </div>
+
+      <div class="layers-list-container" id="layersListContainer">
+        <div id="layersList" class="layers-list"></div>
+      </div>
+
+      <div class="layer-inspector" id="layerInspector">
+        <div class="inspector-header">
+          <span class="inspector-title" id="inspectorLayerName">Selected Layer</span>
+          <span id="inspectorLayerType" class="inspector-type-badge">Text</span>
+        </div>
+        <div class="inspector-row">
+          <span class="inspector-label">Opacity:</span>
+          <input type="range" id="layerOpacityInput" min="0" max="1" step="0.01" value="1" class="inspector-slider" />
+          <span id="layerOpacityValue" class="inspector-val">100%</span>
+        </div>
+        <div class="inspector-row" id="layerScaleRow">
+          <span class="inspector-label">Scale:</span>
+          <input type="range" id="layerScaleInput" min="0.05" max="3" step="0.01" value="1" class="inspector-slider" />
+          <span id="layerScaleValue" class="inspector-val">100%</span>
+        </div>
+        <div class="inspector-row" id="bgAtmosphereRow" style="display: none;">
+          <span class="inspector-label">Filter:</span>
+          <select id="inspectorAtmosphereSelect" style="flex: 1; padding: 3px 6px; font-size: 11.5px; background: #222; border: 1px solid #3d3d3d; border-radius: 4px; color: #fff;">
+            <option value="none">Original</option>
+            <option value="sunset">🌅 Warm Sunset</option>
+            <option value="noir">🎬 Noir / B&amp;W</option>
+            <option value="contrast">⚡ High Contrast</option>
+            <option value="invert">🔄 Inverse</option>
+          </select>
+        </div>
+        <div class="inspector-actions">
+          <button id="layerMoveUpBtn" class="btn btn-neutral btn-xs" title="Move layer forward (up)">▲ Forward</button>
+          <button id="layerMoveDownBtn" class="btn btn-neutral btn-xs" title="Move layer backward (down)">▼ Backward</button>
+          <button id="layerCenterBtn" class="btn btn-neutral btn-xs" title="Center layer on canvas">Center</button>
+          <button id="layerDeleteBtn" class="btn btn-danger btn-xs" title="Delete selected layer">Delete</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane pane-preview">
+      <div class="pane-title">Preview</div>
+      <div id="previewOuter" class="preview-outer">
+        <div id="canvasStage" class="canvas-stage">
+          <div id="backgroundLayerDom" class="background-layer">
+            <img id="backgroundImage" alt="" />
+            <div id="backgroundVignetteOverlay" class="background-vignette-overlay" style="display: none;"></div>
+            <div id="backgroundGrainOverlay" class="background-grain-overlay" style="display: none;"></div>
+          </div>
+          <div id="overlayLayersContainer" class="overlay-layers-container"></div>
+          <div id="preview" class="preview-box"></div>
+          <img id="jpegPreviewImage" class="jpeg-preview-layer" alt="" />
+          <div id="selectionBox" class="selection-box-overlay"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="bottom-actions-panel" id="actionsPanel">
+    <div class="actions-group">
+      <span class="actions-group-label">Text & Censor</span>
+      <button id="blurSelectionButton" class="btn btn-accent" title="Wrap selection with ☘ (Shortcut: Ctrl+B)">Blur Selection ☘ (Ctrl+B)</button>
+      <div class="color-control" title="Select text, then set its !{#HEX} color. The picker follows the current action color.">
+        <span class="control" style="color: var(--muted); font-size: 12px; font-weight: 700;">Color:</span>
+        <input id="chatColorInput" class="chat-color-swatch" type="color" value="#d1d1d1" title="Pick a chat color" />
+        <input id="chatColorHexInput" class="chat-color-hex" type="text" value="#D1D1D1" maxlength="7" spellcheck="false" title="Hex color" />
+        <select id="actionColorPreset" class="action-color-select" title="Apply a standard action color">
+          <option value="">From selection</option>
+          <option value="#D1D1D1">Say</option>
+          <option value="#F0F0F0">Say (bright)</option>
+          <option value="#D8D8D8">Say (dim)</option>
+          <option value="#D4D4D4">Say (soft)</option>
+          <option value="#C2A2DA">Action /me</option>
+          <option value="#FF00C3">Alert [!]</option>
+        </select>
+        <button id="setColorButton" class="btn btn-accent" type="button" title="Apply color to selected text (Ctrl+Shift+C)">Set Color</button>
+      </div>
+      <button id="clearButton" class="btn btn-danger">Clear Text</button>
+    </div>
+
+    <div class="actions-group">
+      <span class="actions-group-label">Canvas & View</span>
+      <button id="resetTextPositionButton" class="btn btn-neutral">Reset Text Position</button>
+      <button id="removeImageButton" class="btn btn-danger">Remove Background</button>
+    </div>
+
+    <div class="actions-group">
+      <span class="actions-group-label">Export Image</span>
+      <button id="uploadImgbbButton" class="btn btn-imgbb" title="Upload screenshot to ImgBB and copy direct link to clipboard (Ctrl+V)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <span>Upload to ImgBB</span>
+      </button>
+      <button id="imgbbHelpButton" class="btn-icon-help" type="button" title="How to get free ImgBB API key">?</button>
+      <button id="copyPngButton" class="btn btn-export">Copy PNG</button>
+      <button id="downloadPngButton" class="btn btn-export">Download PNG</button>
+      <button id="downloadJpegButton" class="btn btn-export">Download JPEG</button>
+    </div>
+  </div>
+
+  <!-- ImgBB Setup Guide Modal -->
+  <div id="imgbbModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>☘</span>
+          <span>ImgBB API Key Setup Guide</span>
+        </div>
+        <button type="button" id="closeImgbbModalBtn" class="toast-close" title="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: #cccccc; line-height: 1.5; margin: 0;">
+          <strong>ImgBB</strong> is a free image hosting service. To let this tool upload your screenshots directly to ImgBB and generate quick links, a free API key is needed.
+        </p>
+
+        <div class="modal-step">
+          <div class="modal-step-number">1</div>
+          <div class="modal-step-content">
+            <div class="modal-step-title">Create a free account on ImgBB</div>
+            <div class="modal-step-desc">
+              Go to <a href="https://imgbb.com/" target="_blank" rel="noopener noreferrer">imgbb.com</a> and sign up for a free account (or log in if you already have one).
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-step">
+          <div class="modal-step-number">2</div>
+          <div class="modal-step-content">
+            <div class="modal-step-title">Get your free API Key</div>
+            <div class="modal-step-desc">
+              Visit <a href="https://api.imgbb.com/" target="_blank" rel="noopener noreferrer">api.imgbb.com</a> and click the blue <strong>"Get API key"</strong> button to generate your 32-character key.
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-step">
+          <div class="modal-step-number">3</div>
+          <div class="modal-step-content">
+            <div class="modal-step-title">Save your key below (or in Settings)</div>
+            <div class="modal-step-desc">
+              Paste your key here to use it immediately in this browser:
+            </div>
+            <div class="modal-input-group">
+              <input type="text" id="imgbbKeyInput" class="modal-input" placeholder="Paste 32-character API key here..." autocomplete="off" spellcheck="false" />
+              <button type="button" id="saveImgbbKeyBtn" class="btn btn-neutral" style="font-weight: 600;">Save Key</button>
+            </div>
+            <div id="imgbbKeyStatus" style="font-size: 11px; margin-top: 5px; color: #888888;"></div>
+          </div>
+        </div>
+
+        <div class="modal-tip-box">
+          💡 <strong>No key needed for normal use!</strong> If you just want to paste your rendered screenshot into Discord, forum posts, or graphic software, click the <strong>Copy PNG</strong> button next to Upload — it copies directly to your clipboard completely offline with no setup required.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="clearImgbbKeyBtn" class="btn btn-neutral" style="font-size: 12px;">Clear Stored Key</button>
+        <button type="button" id="doneImgbbModalBtn" class="btn btn-imgbb">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div class="footer-note" id="footerNote">
+    <span class="tip-label">Tip ☘</span>
+    <div class="tip-carousel">
+      <span id="tipText" class="tip-text">Add images on top of the canvas via the Layers box or "+ Add Image Layer". Drag on the canvas to move any layer, or use the mouse wheel to scale image layers.</span>
+    </div>
+    <div class="tip-controls">
+      <button type="button" id="tipPrevBtn" class="tip-nav-btn" title="Previous tip">◀</button>
+      <button type="button" id="tipNextBtn" class="tip-nav-btn" title="Next tip">▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const input = document.getElementById("input");
+  const preview = document.getElementById("preview");
+  const previewOuter = document.getElementById("previewOuter");
+  const canvasStage = document.getElementById("canvasStage");
+  const fontFamilySelect = document.getElementById("fontFamilySelect");
+  const fontSize = document.getElementById("fontSize");
+  const outlineStyleSelect = document.getElementById("outlineStyleSelect");
+  const strokeWidthInput = document.getElementById("strokeWidthInput");
+  const strokeWidthControl = document.getElementById("strokeWidthControl");
+  const censorStyleSelect = document.getElementById("censorStyleSelect");
+  const blurStrengthInput = document.getElementById("blurStrengthInput");
+  const blurStrengthValue = document.getElementById("blurStrengthValue");
+  const blurStrengthControl = document.getElementById("blurStrengthControl");
+  const blurStrengthLabel = document.getElementById("blurStrengthLabel");
+  const blurSelectionButton = document.getElementById("blurSelectionButton");
+  const chatColorInput = document.getElementById("chatColorInput");
+  const chatColorHexInput = document.getElementById("chatColorHexInput");
+  const actionColorPreset = document.getElementById("actionColorPreset");
+  const setColorButton = document.getElementById("setColorButton");
+  const textPanelWidthInput = document.getElementById("textPanelWidthInput");
+  const textPaddingInput = document.getElementById("textPaddingInput");
+  const backgroundToggle = document.getElementById("backgroundToggle");
+  const backgroundImageInput = document.getElementById("backgroundImageInput");
+  const backgroundImage = document.getElementById("backgroundImage");
+  const canvasWidthInput = document.getElementById("canvasWidthInput");
+  const canvasHeightInput = document.getElementById("canvasHeightInput");
+  const jpegQualityInput = document.getElementById("jpegQualityInput");
+  const jpegQualityValue = document.getElementById("jpegQualityValue");
+  const jpegPreviewImage = document.getElementById("jpegPreviewImage");
+  const removeImageButton = document.getElementById("removeImageButton");
+  const resetTextPositionButton = document.getElementById("resetTextPositionButton");
+  const uploadImgbbButton = document.getElementById("uploadImgbbButton");
+  const copyPngButton = document.getElementById("copyPngButton");
+  const downloadPngButton = document.getElementById("downloadPngButton");
+  const downloadJpegButton = document.getElementById("downloadJpegButton");
+  const clearButton = document.getElementById("clearButton");
+  const resetSettingsButton = document.getElementById("resetSettingsButton");
+  const toastContainer = document.getElementById("toastContainer");
+
+  const layersPane = document.getElementById("layersPane");
+  const layersList = document.getElementById("layersList");
+  const layersCountBadge = document.getElementById("layersCountBadge");
+  const addLayerImageBtn = document.getElementById("addLayerImageBtn");
+  const layerImageFileInput = document.getElementById("layerImageFileInput");
+  const overlayLayersContainer = document.getElementById("overlayLayersContainer");
+  const backgroundLayerDom = document.getElementById("backgroundLayerDom");
+  const selectionBox = document.getElementById("selectionBox");
+
+  const inspectorLayerName = document.getElementById("inspectorLayerName");
+  const inspectorLayerType = document.getElementById("inspectorLayerType");
+  const layerOpacityInput = document.getElementById("layerOpacityInput");
+  const layerOpacityValue = document.getElementById("layerOpacityValue");
+  const layerScaleRow = document.getElementById("layerScaleRow");
+  const layerScaleInput = document.getElementById("layerScaleInput");
+  const layerScaleValue = document.getElementById("layerScaleValue");
+  const layerMoveUpBtn = document.getElementById("layerMoveUpBtn");
+  const layerMoveDownBtn = document.getElementById("layerMoveDownBtn");
+  const layerCenterBtn = document.getElementById("layerCenterBtn");
+  const layerDeleteBtn = document.getElementById("layerDeleteBtn");
+
+  const atmospherePresetSelect = document.getElementById("atmospherePresetSelect");
+  const vignetteToggle = document.getElementById("vignetteToggle");
+  const vignetteSliderContainer = document.getElementById("vignetteSliderContainer");
+  const vignetteStrengthInput = document.getElementById("vignetteStrengthInput");
+  const vignetteStrengthValue = document.getElementById("vignetteStrengthValue");
+  const filmGrainToggle = document.getElementById("filmGrainToggle");
+  const filmGrainSliderContainer = document.getElementById("filmGrainSliderContainer");
+  const filmGrainStrengthInput = document.getElementById("filmGrainStrengthInput");
+  const filmGrainStrengthValue = document.getElementById("filmGrainStrengthValue");
+  const backgroundVignetteOverlay = document.getElementById("backgroundVignetteOverlay");
+  const backgroundGrainOverlay = document.getElementById("backgroundGrainOverlay");
+  const bgAtmosphereRow = document.getElementById("bgAtmosphereRow");
+  const inspectorAtmosphereSelect = document.getElementById("inspectorAtmosphereSelect");
+
+  let layers = [
+    {
+      id: "layer-bg",
+      type: "background",
+      name: "Background Image",
+      visible: true,
+      opacity: 1,
+      filter: "none"
+    },
+    {
+      id: "layer-text",
+      type: "text",
+      name: "Chatlog Text",
+      visible: true,
+      opacity: 1
+    }
+  ];
+  let selectedLayerId = "layer-text";
+  let layerIdCounter = 0;
+  let draggingLayerId = null;
+  let originalLayerX = 0;
+  let originalLayerY = 0;
+
+  const TIMESTAMP_REGEX = /^\s*\[\d{1,2}:\d{2}(?::\d{2})?\]\s*/;
+  const TIMESTAMP_CAPTURE_REGEX = /^(\s*\[\d{1,2}:\d{2}(?::\d{2})?\]\s*)/;
+
+  const CHAT_COLORS = {
+    timestamp: "#d8d8d8",
+    say: "#f1f1f1",
+    talking: "#f1f1f1",
+    low: "#d9d4d5",
+    lower: "#b8b4b5",
+    whisper: "#eda841",
+    shout: "#f1f1f1",
+    me: "#C2A2DA",
+    do: "#C2A2DA",
+    ame: "#C2A2DA",
+    pm: "#fbf724",
+    phone: "#fbf724",
+    phonecall: "#fbf724",
+    ooc: "#d9d4d5",
+    admin: "#f00000",
+    helper: "#3896f3",
+    radio: "#FEE58F",
+    department: "#3896f3",
+    ckblue: "#3896f3",
+    ckred: "#f00000",
+    ad: "#56d64b",
+    dice: "#ffff00",
+    money: "#56d64b",
+    item: "#56d64b",
+    inventory: "#ffff00",
+    system: "#ffff00",
+    error: "#f00000",
+    default: "#f1f1f1"
+  };
+
+  let bgImageObject = null;
+  let bgImageDataUrl = "";
+  let bgX = 0;
+  let bgY = 0;
+  let bgScale = 1;
+
+  const DEFAULT_TEXT_OFFSET_X = 15;
+  const DEFAULT_TEXT_OFFSET_Y = 15;
+
+  let textOffsetX = DEFAULT_TEXT_OFFSET_X;
+  let textOffsetY = DEFAULT_TEXT_OFFSET_Y;
+
+  let dragMode = null;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let originalBgX = 0;
+  let originalBgY = 0;
+  let originalTextX = 0;
+  let originalTextY = 0;
+
+  const SETTINGS_STORAGE_KEY = "gtarp_chatlog_magician_settings_v1";
+
+  const DEFAULT_SETTINGS = {
+    fontFamily: "Arial, Helvetica, sans-serif",
+    fontSize: 14,
+    textPanelWidth: 500,
+    textPadding: 8,
+    outlineStyle: "stroke",
+    strokeWidth: 1.5,
+    backgroundToggle: true,
+    censorStyle: "blur",
+    blurStrength: 3,
+    canvasWidth: 600,
+    canvasHeight: 600,
+    jpegQuality: 1,
+    atmospherePreset: "none",
+    vignette: false,
+    vignetteStrength: 45,
+    filmGrain: false,
+    filmGrainStrength: 25
+  };
+
+  let saveSettingsTimer = null;
+
+  function saveCurrentSettings() {
+    try {
+      const current = {
+        fontFamily: fontFamilySelect ? fontFamilySelect.value : DEFAULT_SETTINGS.fontFamily,
+        fontSize: Number(fontSize.value) || DEFAULT_SETTINGS.fontSize,
+        textPanelWidth: Number(textPanelWidthInput.value) || DEFAULT_SETTINGS.textPanelWidth,
+        textPadding: textPaddingInput ? Number(textPaddingInput.value) : DEFAULT_SETTINGS.textPadding,
+        outlineStyle: outlineStyleSelect ? outlineStyleSelect.value : DEFAULT_SETTINGS.outlineStyle,
+        strokeWidth: parseFloat(strokeWidthInput ? strokeWidthInput.value : String(DEFAULT_SETTINGS.strokeWidth)) || DEFAULT_SETTINGS.strokeWidth,
+        backgroundToggle: backgroundToggle ? backgroundToggle.checked : DEFAULT_SETTINGS.backgroundToggle,
+        censorStyle: censorStyleSelect ? censorStyleSelect.value : DEFAULT_SETTINGS.censorStyle,
+        blurStrength: parseInt(blurStrengthInput ? blurStrengthInput.value : String(DEFAULT_SETTINGS.blurStrength), 10) || DEFAULT_SETTINGS.blurStrength,
+        canvasWidth: Number(canvasWidthInput.value) || DEFAULT_SETTINGS.canvasWidth,
+        canvasHeight: Number(canvasHeightInput.value) || DEFAULT_SETTINGS.canvasHeight,
+        jpegQuality: Number(jpegQualityInput.value) || DEFAULT_SETTINGS.jpegQuality,
+        atmospherePreset: (() => {
+          const bg = layers.find(l => l.type === "background");
+          return bg && bg.filter ? bg.filter : (atmospherePresetSelect ? atmospherePresetSelect.value : DEFAULT_SETTINGS.atmospherePreset);
+        })(),
+        vignette: vignetteToggle ? vignetteToggle.checked : DEFAULT_SETTINGS.vignette,
+        vignetteStrength: Number(vignetteStrengthInput ? vignetteStrengthInput.value : DEFAULT_SETTINGS.vignetteStrength) || DEFAULT_SETTINGS.vignetteStrength,
+        filmGrain: filmGrainToggle ? filmGrainToggle.checked : DEFAULT_SETTINGS.filmGrain,
+        filmGrainStrength: Number(filmGrainStrengthInput ? filmGrainStrengthInput.value : DEFAULT_SETTINGS.filmGrainStrength) || DEFAULT_SETTINGS.filmGrainStrength
+      };
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(current));
+    } catch (err) {
+      console.warn("Could not save settings to localStorage:", err);
+    }
+  }
+
+  function saveCurrentSettingsDebounced() {
+    if (saveSettingsTimer) clearTimeout(saveSettingsTimer);
+    saveSettingsTimer = setTimeout(() => {
+      saveCurrentSettings();
+    }, 250);
+  }
+
+  function loadAndApplySavedSettings() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return;
+
+      // Safe schema merge: any missing or new settings safely fall back to DEFAULT_SETTINGS,
+      // and any deleted/obsolete setting from prior versions is safely ignored without breaking.
+      const s = { ...DEFAULT_SETTINGS, ...parsed };
+
+      if (fontFamilySelect && typeof s.fontFamily === "string") {
+        fontFamilySelect.value = s.fontFamily;
+      }
+      if (fontSize && typeof s.fontSize === "number" && !isNaN(s.fontSize)) {
+        fontSize.value = Math.max(8, Math.min(s.fontSize, 72));
+      }
+      if (textPanelWidthInput && typeof s.textPanelWidth === "number" && !isNaN(s.textPanelWidth)) {
+        textPanelWidthInput.value = Math.max(50, Math.min(s.textPanelWidth, 4000));
+      }
+      if (textPaddingInput && typeof s.textPadding === "number" && !isNaN(s.textPadding)) {
+        textPaddingInput.value = Math.max(0, Math.min(s.textPadding, 80));
+      }
+      if (outlineStyleSelect && typeof s.outlineStyle === "string") {
+        outlineStyleSelect.value = s.outlineStyle;
+      }
+      if (strokeWidthInput && typeof s.strokeWidth === "number" && !isNaN(s.strokeWidth)) {
+        strokeWidthInput.value = Math.max(0.5, Math.min(s.strokeWidth, 10));
+      }
+      if (backgroundToggle && typeof s.backgroundToggle === "boolean") {
+        backgroundToggle.checked = s.backgroundToggle;
+      }
+      if (censorStyleSelect && typeof s.censorStyle === "string") {
+        censorStyleSelect.value = s.censorStyle;
+      }
+      if (blurStrengthInput && typeof s.blurStrength === "number" && !isNaN(s.blurStrength)) {
+        blurStrengthInput.value = Math.max(1, Math.min(s.blurStrength, 20));
+        if (blurStrengthValue) blurStrengthValue.textContent = `${blurStrengthInput.value}px`;
+      }
+      if (canvasWidthInput && typeof s.canvasWidth === "number" && !isNaN(s.canvasWidth)) {
+        canvasWidthInput.value = Math.max(100, Math.min(s.canvasWidth, 4000));
+      }
+      if (canvasHeightInput && typeof s.canvasHeight === "number" && !isNaN(s.canvasHeight)) {
+        canvasHeightInput.value = Math.max(100, Math.min(s.canvasHeight, 4000));
+      }
+      if (jpegQualityInput && typeof s.jpegQuality === "number" && !isNaN(s.jpegQuality)) {
+        jpegQualityInput.value = Math.max(0.05, Math.min(s.jpegQuality, 1));
+        if (jpegQualityValue) {
+          jpegQualityValue.textContent = Math.round(jpegQualityInput.value * 100) + "%";
+        }
+      }
+      if (typeof s.atmospherePreset === "string") {
+        const mappedPreset = s.atmospherePreset === "cold" ? "invert" : s.atmospherePreset;
+        const bgLayer = layers.find(l => l.type === "background");
+        if (bgLayer) bgLayer.filter = mappedPreset;
+        if (atmospherePresetSelect) atmospherePresetSelect.value = mappedPreset;
+        if (inspectorAtmosphereSelect) inspectorAtmosphereSelect.value = mappedPreset;
+      }
+      if (vignetteToggle && typeof s.vignette === "boolean") {
+        vignetteToggle.checked = s.vignette;
+        if (vignetteSliderContainer) {
+          vignetteSliderContainer.style.display = s.vignette ? "flex" : "none";
+        }
+      }
+      if (vignetteStrengthInput && typeof s.vignetteStrength === "number") {
+        vignetteStrengthInput.value = Math.max(10, Math.min(s.vignetteStrength, 100));
+        if (vignetteStrengthValue) vignetteStrengthValue.textContent = `${vignetteStrengthInput.value}%`;
+      }
+      if (filmGrainToggle && typeof s.filmGrain === "boolean") {
+        filmGrainToggle.checked = s.filmGrain;
+        if (filmGrainSliderContainer) {
+          filmGrainSliderContainer.style.display = s.filmGrain ? "flex" : "none";
+        }
+      }
+      if (filmGrainStrengthInput && typeof s.filmGrainStrength === "number") {
+        filmGrainStrengthInput.value = Math.max(5, Math.min(s.filmGrainStrength, 75));
+        if (filmGrainStrengthValue) filmGrainStrengthValue.textContent = `${filmGrainStrengthInput.value}%`;
+      }
+      updateAtmosphereDom();
+    } catch (err) {
+      console.warn("Could not load settings from localStorage:", err);
+    }
+  }
+
+  function resetSettingsToDefault() {
+    try {
+      localStorage.removeItem(SETTINGS_STORAGE_KEY);
+    } catch (err) {
+      console.warn("Could not clear settings from localStorage:", err);
+    }
+
+    if (fontFamilySelect) fontFamilySelect.value = DEFAULT_SETTINGS.fontFamily;
+    if (fontSize) fontSize.value = DEFAULT_SETTINGS.fontSize;
+    if (textPanelWidthInput) textPanelWidthInput.value = DEFAULT_SETTINGS.textPanelWidth;
+    if (textPaddingInput) textPaddingInput.value = DEFAULT_SETTINGS.textPadding;
+    if (outlineStyleSelect) outlineStyleSelect.value = DEFAULT_SETTINGS.outlineStyle;
+    if (strokeWidthInput) strokeWidthInput.value = DEFAULT_SETTINGS.strokeWidth;
+    if (backgroundToggle) backgroundToggle.checked = DEFAULT_SETTINGS.backgroundToggle;
+    if (censorStyleSelect) censorStyleSelect.value = DEFAULT_SETTINGS.censorStyle;
+    if (blurStrengthInput) {
+      blurStrengthInput.value = DEFAULT_SETTINGS.blurStrength;
+      if (blurStrengthValue) blurStrengthValue.textContent = `${DEFAULT_SETTINGS.blurStrength}px`;
+    }
+    if (canvasWidthInput) canvasWidthInput.value = DEFAULT_SETTINGS.canvasWidth;
+    if (canvasHeightInput) canvasHeightInput.value = DEFAULT_SETTINGS.canvasHeight;
+    if (jpegQualityInput) {
+      jpegQualityInput.value = DEFAULT_SETTINGS.jpegQuality;
+      if (jpegQualityValue) jpegQualityValue.textContent = "100%";
+    }
+    if (atmospherePresetSelect) atmospherePresetSelect.value = DEFAULT_SETTINGS.atmospherePreset;
+    if (inspectorAtmosphereSelect) inspectorAtmosphereSelect.value = DEFAULT_SETTINGS.atmospherePreset;
+    const bgLayer = layers.find(l => l.type === "background");
+    if (bgLayer) bgLayer.filter = DEFAULT_SETTINGS.atmospherePreset;
+    layers.forEach(l => {
+      if (l.type === "image") l.filter = "none";
+    });
+    if (vignetteToggle) {
+      vignetteToggle.checked = DEFAULT_SETTINGS.vignette;
+      if (vignetteSliderContainer) vignetteSliderContainer.style.display = "none";
+    }
+    if (vignetteStrengthInput) {
+      vignetteStrengthInput.value = DEFAULT_SETTINGS.vignetteStrength;
+      if (vignetteStrengthValue) vignetteStrengthValue.textContent = `${DEFAULT_SETTINGS.vignetteStrength}%`;
+    }
+    if (filmGrainToggle) {
+      filmGrainToggle.checked = DEFAULT_SETTINGS.filmGrain;
+      if (filmGrainSliderContainer) filmGrainSliderContainer.style.display = "none";
+    }
+    if (filmGrainStrengthInput) {
+      filmGrainStrengthInput.value = DEFAULT_SETTINGS.filmGrainStrength;
+      if (filmGrainStrengthValue) filmGrainStrengthValue.textContent = `${DEFAULT_SETTINGS.filmGrainStrength}%`;
+    }
+
+    document.documentElement.style.setProperty("--chat-font-size", `${DEFAULT_SETTINGS.fontSize}px`);
+    document.documentElement.style.setProperty("--chat-text-padding", `${DEFAULT_SETTINGS.textPadding}px`);
+    updateTextPanelWidth();
+    preview.classList.toggle("no-text-background", !backgroundToggle.checked);
+    updateCanvasStageSize();
+    updateFontFamily();
+    updateOutlineSettings();
+    updateCensorSettings();
+    updateAtmosphereDom();
+    scheduleJpegPreview();
+    render();
+
+    showToast("success", "Settings Reset", "All settings have been restored to their original defaults.");
+  }
+
+  function getSelectedImageOrBackgroundLayer() {
+    const selected = getSelectedLayer();
+    if (selected && (selected.type === "image" || selected.type === "background")) {
+      return selected;
+    }
+    const bg = layers.find(l => l.type === "background");
+    if (bg) return bg;
+    return layers.find(l => l.type === "image") || null;
+  }
+
+  function getFilterDisplayName(preset) {
+    switch (preset) {
+      case "sunset": return "Sunset";
+      case "noir": return "Noir";
+      case "contrast": return "Contrast";
+      case "invert":
+      case "cold": return "Inverse";
+      default: return "";
+    }
+  }
+
+  function getAtmospherePreset() {
+    const layer = getSelectedImageOrBackgroundLayer();
+    return layer ? (layer.filter || "none") : "none";
+  }
+
+  function isVignetteEnabled() {
+    return vignetteToggle ? vignetteToggle.checked : false;
+  }
+
+  function getVignetteStrength() {
+    return vignetteStrengthInput ? Number(vignetteStrengthInput.value) || 45 : 45;
+  }
+
+  function isFilmGrainEnabled() {
+    return filmGrainToggle ? filmGrainToggle.checked : false;
+  }
+
+  function getFilmGrainStrength() {
+    return filmGrainStrengthInput ? Number(filmGrainStrengthInput.value) || 25 : 25;
+  }
+
+  function getCanvasFilterForPreset(preset) {
+    switch (preset) {
+      case "noir":
+        return "grayscale(100%) contrast(1.4) brightness(0.92)";
+      case "sunset":
+        return "sepia(0.35) saturate(1.4) contrast(1.08) brightness(1.02)";
+      case "contrast":
+        return "contrast(1.35) saturate(1.3) brightness(0.98)";
+      case "invert":
+      case "cold":
+        return "invert(100%)";
+      default:
+        return "none";
+    }
+  }
+
+  function getCssFilterForPreset(preset) {
+    switch (preset) {
+      case "noir":
+        return "grayscale(100%) contrast(140%) brightness(92%)";
+      case "sunset":
+        return "sepia(35%) saturate(140%) contrast(108%) brightness(102%)";
+      case "contrast":
+        return "contrast(135%) saturate(130%) brightness(98%)";
+      case "invert":
+      case "cold":
+        return "invert(100%)";
+      default:
+        return "none";
+    }
+  }
+
+  let cachedGrainCanvas = null;
+  let cachedGrainPattern = null;
+
+  function getFilmGrainPattern(ctx) {
+    if (cachedGrainPattern) return cachedGrainPattern;
+    try {
+      cachedGrainCanvas = document.createElement("canvas");
+      cachedGrainCanvas.width = 128;
+      cachedGrainCanvas.height = 128;
+      const gCtx = cachedGrainCanvas.getContext("2d");
+      const imgData = gCtx.createImageData(128, 128);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const val = Math.floor(Math.random() * 256);
+        data[i] = val;
+        data[i + 1] = val;
+        data[i + 2] = val;
+        data[i + 3] = 85;
+      }
+      gCtx.putImageData(imgData, 0, 0);
+      cachedGrainPattern = ctx.createPattern(cachedGrainCanvas, "repeat");
+
+      if (backgroundGrainOverlay) {
+        backgroundGrainOverlay.style.backgroundImage = `url(${cachedGrainCanvas.toDataURL()})`;
+      }
+      return cachedGrainPattern;
+    } catch (e) {
+      console.warn("Grain pattern generation failed:", e);
+      return null;
+    }
+  }
+
+  function drawVignette(ctx, width, height, strengthPercent) {
+    const strength = Math.max(0.1, Math.min(1, strengthPercent / 100));
+    const cx = width / 2;
+    const cy = height / 2;
+    const maxRadius = Math.sqrt(cx * cx + cy * cy);
+    const innerRadius = maxRadius * 0.32;
+    const gradient = ctx.createRadialGradient(cx, cy, innerRadius, cx, cy, maxRadius);
+    gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+    gradient.addColorStop(0.55, `rgba(0, 0, 0, ${0.2 * strength})`);
+    gradient.addColorStop(0.85, `rgba(0, 0, 0, ${0.7 * strength})`);
+    gradient.addColorStop(1, `rgba(0, 0, 0, ${0.98 * strength})`);
+    ctx.save();
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+
+  function drawFilmGrain(ctx, width, height, strengthPercent) {
+    const pattern = getFilmGrainPattern(ctx);
+    if (!pattern) return;
+    const strength = Math.max(0.08, Math.min(0.75, (strengthPercent / 100) * 0.95));
+    ctx.save();
+    ctx.globalAlpha = strength;
+    ctx.globalCompositeOperation = "overlay";
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+
+  function updateAtmosphereDom() {
+    const bgLayer = layers.find(l => l.type === "background");
+    const bgFilter = bgLayer ? (bgLayer.filter || "none") : "none";
+    const cssFilter = getCssFilterForPreset(bgFilter);
+    if (backgroundImage) {
+      backgroundImage.style.filter = cssFilter;
+    }
+
+    if (backgroundVignetteOverlay) {
+      if (isVignetteEnabled()) {
+        backgroundVignetteOverlay.style.display = "block";
+        const alpha = Math.min(1, Math.max(0.1, getVignetteStrength() / 100));
+        backgroundVignetteOverlay.style.opacity = String(alpha);
+      } else {
+        backgroundVignetteOverlay.style.display = "none";
+      }
+    }
+
+    if (backgroundGrainOverlay) {
+      if (isFilmGrainEnabled()) {
+        if (!cachedGrainCanvas) {
+          const dummy = document.createElement("canvas");
+          const dummyCtx = dummy.getContext("2d");
+          getFilmGrainPattern(dummyCtx);
+        }
+        backgroundGrainOverlay.style.display = "block";
+        const grainAlpha = Math.min(0.75, Math.max(0.08, (getFilmGrainStrength() / 100) * 0.95));
+        backgroundGrainOverlay.style.opacity = String(grainAlpha);
+      } else {
+        backgroundGrainOverlay.style.display = "none";
+      }
+    }
+
+    // Also update any overlay image DOM elements to match their layer filter
+    if (overlayLayersContainer) {
+      const overlayImgs = overlayLayersContainer.querySelectorAll(".overlay-img-item");
+      overlayImgs.forEach(el => {
+        const layerId = el.getAttribute("data-layer-id");
+        const lyr = layers.find(l => l.id === layerId);
+        if (lyr) {
+          el.style.filter = getCssFilterForPreset(lyr.filter || "none");
+        }
+      });
+    }
+  }
+
+  function getCanvasWidth() {
+    const value = Number(canvasWidthInput.value);
+    if (Number.isNaN(value) || value < 100) return 600;
+    return Math.min(value, 4000);
+  }
+
+  function getCanvasHeight() {
+    const value = Number(canvasHeightInput.value);
+    if (Number.isNaN(value) || value < 100) return 600;
+    return Math.min(value, 4000);
+  }
+
+  function getMaxTextPanelWidth() {
+    return Math.max(50, getCanvasWidth());
+  }
+
+  function getTextPanelWidth() {
+    const value = Number(textPanelWidthInput.value);
+    if (Number.isNaN(value) || value < 50) return Math.min(500, getMaxTextPanelWidth());
+    return Math.min(value, getMaxTextPanelWidth());
+  }
+
+  function getTextPadding() {
+    const value = Number(textPaddingInput ? textPaddingInput.value : DEFAULT_SETTINGS.textPadding);
+    if (Number.isNaN(value) || value < 0) return DEFAULT_SETTINGS.textPadding;
+    return Math.min(Math.max(value, 0), 80);
+  }
+
+  function getEffectiveTextPanelWidth() {
+    const padding = getTextPadding();
+    const remaining = Math.max(20, getCanvasWidth() - Math.max(0, textOffsetX) - padding * 2);
+    return Math.min(getTextPanelWidth(), remaining);
+  }
+
+  function getFontFamily() {
+    return fontFamilySelect ? fontFamilySelect.value : "Arial, Helvetica, sans-serif";
+  }
+
+  function updateFontFamily() {
+    preview.style.setProperty("--chat-font-family", getFontFamily());
+    render();
+  }
+
+  function getOutlineSettings() {
+    const style = outlineStyleSelect ? outlineStyleSelect.value : "stroke";
+    const thickness = parseFloat(strokeWidthInput ? strokeWidthInput.value : "1.5") || 1.5;
+    return { style, thickness: Math.max(0.5, Math.min(thickness, 10)) };
+  }
+
+  function updateOutlineSettings() {
+    const { style, thickness } = getOutlineSettings();
+    const t = thickness.toFixed(1) + "px";
+    const negT = (-thickness).toFixed(1) + "px";
+
+    if (style === "none") {
+      strokeWidthControl.style.display = "none";
+      preview.style.setProperty("--chat-text-shadow", "none");
+    } else {
+      strokeWidthControl.style.display = "flex";
+      if (style === "stroke") {
+        preview.style.setProperty("--chat-text-shadow", `
+          ${negT} ${negT} 0 rgba(0,0,0,0.88),
+          ${t} ${negT} 0 rgba(0,0,0,0.88),
+          ${negT} ${t} 0 rgba(0,0,0,0.88),
+          ${t} ${t} 0 rgba(0,0,0,0.88)
+        `);
+      } else if (style === "shadow") {
+        const shadowOffset = Math.max(1, thickness).toFixed(1) + "px";
+        const shadowBlur = Math.max(2, thickness * 1.6).toFixed(1) + "px";
+        preview.style.setProperty("--chat-text-shadow", `${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)`);
+      } else if (style === "both") {
+        const shadowOffset = (thickness * 1.4).toFixed(1) + "px";
+        const shadowBlur = (thickness * 2).toFixed(1) + "px";
+        preview.style.setProperty("--chat-text-shadow", `
+          ${negT} ${negT} 0 rgba(0,0,0,0.88),
+          ${t} ${negT} 0 rgba(0,0,0,0.88),
+          ${negT} ${t} 0 rgba(0,0,0,0.88),
+          ${t} ${t} 0 rgba(0,0,0,0.88),
+          ${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)
+        `);
+      }
+    }
+    render();
+  }
+
+  function getCensorSettings() {
+    const mode = censorStyleSelect ? censorStyleSelect.value : "blur";
+    const blurStrength = parseInt(blurStrengthInput ? blurStrengthInput.value : "3", 10) || 3;
+    return { mode, blurStrength: Math.max(1, Math.min(blurStrength, 20)) };
+  }
+
+  function updateCensorSettings() {
+    const { mode, blurStrength } = getCensorSettings();
+    blurStrengthValue.textContent = `${blurStrength}px`;
+
+    preview.classList.remove("censor-redact", "censor-mosaic");
+
+    if (mode === "redact") {
+      blurStrengthControl.style.display = "none";
+      preview.classList.add("censor-redact");
+    } else if (mode === "mosaic") {
+      blurStrengthControl.style.display = "flex";
+      if (blurStrengthLabel) blurStrengthLabel.textContent = "Mosaic size:";
+      preview.classList.add("censor-mosaic");
+      preview.style.setProperty("--mosaic-size", `${blurStrength}px`);
+    } else {
+      blurStrengthControl.style.display = "flex";
+      if (blurStrengthLabel) blurStrengthLabel.textContent = "Blur strength:";
+      preview.style.setProperty("--blur-radius", `${blurStrength}px`);
+    }
+    render();
+  }
+
+  function blurSelectedTextInInput() {
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const val = input.value;
+
+    if (start === end) {
+      const before = val.slice(0, start);
+      const after = val.slice(end);
+      input.value = before + "☘☘" + after;
+      input.selectionStart = start + 1;
+      input.selectionEnd = start + 1;
+    } else {
+      const selected = val.slice(start, end);
+      if (selected.startsWith("☘") && selected.endsWith("☘") && selected.length >= 2) {
+        const unwrapped = selected.slice(1, -1);
+        input.value = val.slice(0, start) + unwrapped + val.slice(end);
+        input.selectionStart = start;
+        input.selectionEnd = start + unwrapped.length;
+      } else {
+        const wrapped = `☘${selected}☘`;
+        input.value = val.slice(0, start) + wrapped + val.slice(end);
+        input.selectionStart = start;
+        input.selectionEnd = start + wrapped.length;
+      }
+    }
+    input.focus();
+    render();
+  }
+
+  function setChatColorInputs(hex, fromPreset = false) {
+    const normalized = normalizeHexColor(hex) || "#D1D1D1";
+    if (chatColorInput) chatColorInput.value = normalized.toLowerCase();
+    if (chatColorHexInput) chatColorHexInput.value = normalized;
+    if (!fromPreset && actionColorPreset) {
+      const match = Array.from(actionColorPreset.options).find(opt => normalizeHexColor(opt.value) === normalized);
+      actionColorPreset.value = match && match.value ? match.value : "";
+    }
+  }
+
+  function getColorAtInputPosition(pos) {
+    const val = input.value;
+    const lineStart = val.lastIndexOf("\n", pos - 1) + 1;
+    let lineEnd = val.indexOf("\n", pos);
+    if (lineEnd === -1) lineEnd = val.length;
+    const line = val.slice(lineStart, lineEnd);
+    const rel = Math.max(0, Math.min(pos, lineEnd) - lineStart);
+    const className = classifyLine(line);
+    let color = CHAT_COLORS[className] || CHAT_COLORS.default;
+
+    const regex = getInlineColorRegex();
+    let match;
+    while ((match = regex.exec(line)) !== null) {
+      if (rel < match.index) break;
+      const parsed = normalizeHexColor(match[1]);
+      if (parsed) color = parsed;
+      if (rel < match.index + match[0].length) break;
+    }
+
+    return color;
+  }
+
+  function syncColorPickerFromSelection() {
+    if (!input) return;
+    const pos = typeof input.selectionStart === "number" ? input.selectionStart : 0;
+    setChatColorInputs(getColorAtInputPosition(pos));
+  }
+
+  function applyColorTagToLine(line, tag) {
+    if (line.trim() === "") return line;
+    const tsMatch = line.match(TIMESTAMP_REGEX);
+    const prefix = tsMatch ? tsMatch[0] : "";
+    let rest = tsMatch ? line.slice(tsMatch[0].length) : line;
+    rest = rest.replace(/^[ \t]*!?\{#[0-9A-Fa-f]{3,8}\}/, "");
+    return prefix + tag + rest;
+  }
+
+  function applyColorToSelection() {
+    if (!input) return;
+    const hex = normalizeHexColor(chatColorHexInput ? chatColorHexInput.value : (chatColorInput ? chatColorInput.value : ""));
+    if (!hex) return;
+
+    const tag = `!{${hex}}`;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const val = input.value;
+
+    if (start === end) {
+      const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+      const beforeInLine = val.slice(lineStart, start);
+      const tsMatch = beforeInLine.match(TIMESTAMP_REGEX);
+      let insertAt = start;
+      if (tsMatch && start < lineStart + tsMatch[0].length) {
+        insertAt = lineStart + tsMatch[0].length;
+      }
+      const after = val.slice(insertAt);
+      const codeMatch = after.match(/^!?\{#[0-9A-Fa-f]{3,8}\}/);
+      if (codeMatch) {
+        input.value = val.slice(0, insertAt) + tag + after.slice(codeMatch[0].length);
+      } else {
+        input.value = val.slice(0, insertAt) + tag + after;
+      }
+      input.selectionStart = insertAt + tag.length;
+      input.selectionEnd = insertAt + tag.length;
+    } else {
+      const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+      const prefix = val.slice(lineStart, start);
+      const startsAtLineContent = prefix === "" || (TIMESTAMP_REGEX.test(prefix) && prefix.replace(TIMESTAMP_REGEX, "") === "");
+      const selected = val.slice(start, end);
+      const precedingCode = prefix.match(/!?\{#[0-9A-Fa-f]{3,8}\}[ \t]*$/);
+
+      let replaceStart = start;
+      let nextSelected;
+      if (startsAtLineContent) {
+        nextSelected = selected.split("\n").map(line => applyColorTagToLine(line, tag)).join("\n");
+      } else if (precedingCode) {
+        replaceStart = start - precedingCode[0].length;
+        const cleaned = selected.replace(/^!?\{#[0-9A-Fa-f]{3,8}\}/, "");
+        nextSelected = tag + cleaned;
+      } else {
+        const cleaned = selected.replace(/^!?\{#[0-9A-Fa-f]{3,8}\}/, "");
+        nextSelected = tag + cleaned;
+      }
+
+      input.value = val.slice(0, replaceStart) + nextSelected + val.slice(end);
+      input.selectionStart = replaceStart;
+      input.selectionEnd = replaceStart + nextSelected.length;
+    }
+
+    input.focus();
+    render();
+    syncColorPickerFromSelection();
+  }
+
+  function loadBackgroundImageFile(file) {
+    if (!file || !file.type.startsWith("image/")) {
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      bgImageDataUrl = reader.result;
+      backgroundImage.src = bgImageDataUrl;
+
+      bgImageObject = new Image();
+      bgImageObject.onload = () => {
+        bgX = 0;
+        bgY = 0;
+        bgScale = Math.max(
+          getCanvasWidth() / bgImageObject.naturalWidth,
+          getCanvasHeight() / bgImageObject.naturalHeight
+        );
+
+        updateBackgroundTransform();
+        renderLayersUI();
+        updateDomLayers();
+      };
+
+      bgImageObject.src = bgImageDataUrl;
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function updateCanvasStageSize() {
+    const width = getCanvasWidth();
+    const height = getCanvasHeight();
+    canvasStage.style.width = width + "px";
+    canvasStage.style.height = height + "px";
+    if (textPanelWidthInput) {
+      textPanelWidthInput.max = String(width);
+    }
+    updateTextPosition();
+  }
+
+  function updateTextPanelWidth() {
+    render();
+  }
+
+  function updateBackgroundTransform() {
+    backgroundImage.style.transform = `translate(${bgX}px, ${bgY}px) scale(${bgScale})`;
+    scheduleJpegPreview();
+  }
+
+  function clampTextToCanvas() {
+    const canvasWidth = getCanvasWidth();
+    const canvasHeight = getCanvasHeight();
+    const maxWrap = getMaxTextPanelWidth();
+
+    if (textPanelWidthInput) {
+      textPanelWidthInput.max = String(maxWrap);
+      const rawWrap = Number(textPanelWidthInput.value);
+      if (!Number.isNaN(rawWrap) && rawWrap > maxWrap) {
+        textPanelWidthInput.value = maxWrap;
+      }
+    }
+
+    for (let i = 0; i < 2; i++) {
+      const size = measureTextBox();
+      const maxX = Math.max(0, canvasWidth - size.width);
+      const maxY = Math.max(0, canvasHeight - size.height);
+      textOffsetX = Math.min(Math.max(0, textOffsetX), maxX);
+      textOffsetY = Math.min(Math.max(0, textOffsetY), maxY);
+    }
+
+    document.documentElement.style.setProperty("--text-panel-width", getEffectiveTextPanelWidth() + "px");
+    document.documentElement.style.setProperty("--chat-text-padding", getTextPadding() + "px");
+    if (preview) {
+      preview.style.maxHeight = Math.max(0, canvasHeight - Math.max(0, textOffsetY)) + "px";
+    }
+  }
+
+  function updateTextPosition() {
+    clampTextToCanvas();
+    preview.style.transform = `translate(${textOffsetX}px, ${textOffsetY}px)`;
+    updateSelectionBox();
+    scheduleJpegPreview();
+  }
+
+  function getSelectedLayer() {
+    return layers.find(l => l.id === selectedLayerId) || layers[layers.length - 1];
+  }
+
+  function addOverlayImageLayerFromFile(file) {
+    if (!file || !file.type.startsWith("image/")) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const img = new Image();
+      img.onload = () => {
+        layerIdCounter++;
+        const cw = getCanvasWidth();
+        const ch = getCanvasHeight();
+
+        let scale = 1;
+        const maxFit = 0.75;
+        if (img.naturalWidth > cw * maxFit || img.naturalHeight > ch * maxFit) {
+          scale = Math.min((cw * maxFit) / img.naturalWidth, (ch * maxFit) / img.naturalHeight);
+          scale = Math.round(scale * 100) / 100;
+        }
+
+        const w = img.naturalWidth * scale;
+        const h = img.naturalHeight * scale;
+        const x = Math.round((cw - w) / 2);
+        const y = Math.round((ch - h) / 2);
+
+        const cleanName = file.name ? file.name.replace(/\.[^.]+$/, "") : `Image ${layerIdCounter}`;
+
+        const newLayer = {
+          id: "layer-img-" + Date.now() + "-" + layerIdCounter,
+          type: "image",
+          name: cleanName,
+          visible: true,
+          opacity: 1,
+          scale: Math.max(0.05, scale),
+          x: x,
+          y: y,
+          img: img,
+          dataUrl: dataUrl,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          filter: "none"
+        };
+
+        layers.push(newLayer);
+        selectedLayerId = newLayer.id;
+
+        renderLayersUI();
+        updateDomLayers();
+        scheduleJpegPreview();
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function renderLayersUI() {
+    if (!layersList) return;
+
+    if (layersCountBadge) {
+      layersCountBadge.textContent = `${layers.length} Layers`;
+    }
+
+    // Visual order: top layer on top
+    const reversed = layers.slice().reverse();
+    layersList.innerHTML = "";
+
+    reversed.forEach((layer, revIdx) => {
+      const actualIdx = layers.length - 1 - revIdx;
+      const isTop = actualIdx === layers.length - 1;
+      const isBottom = actualIdx === 0;
+      const isSelected = layer.id === selectedLayerId;
+
+      const item = document.createElement("div");
+      item.className = `layer-item ${isSelected ? "active" : ""}`;
+      item.setAttribute("data-layer-id", layer.id);
+
+      // Visibility button
+      const visBtn = document.createElement("button");
+      visBtn.type = "button";
+      visBtn.className = `layer-visibility-btn ${layer.visible ? "" : "is-hidden"}`;
+      visBtn.title = layer.visible ? "Hide layer" : "Show layer";
+      visBtn.innerHTML = layer.visible
+        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>'
+        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+      visBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        layer.visible = !layer.visible;
+        renderLayersUI();
+        updateDomLayers();
+        scheduleJpegPreview();
+      });
+
+      // Thumbnail
+      const thumb = document.createElement("div");
+      thumb.className = "layer-thumb";
+      if (layer.type === "image" && layer.dataUrl) {
+        const imgEl = document.createElement("img");
+        imgEl.src = layer.dataUrl;
+        imgEl.alt = "";
+        thumb.appendChild(imgEl);
+      } else if (layer.type === "background") {
+        if (bgImageDataUrl) {
+          const imgEl = document.createElement("img");
+          imgEl.src = bgImageDataUrl;
+          imgEl.alt = "";
+          thumb.appendChild(imgEl);
+        } else {
+          thumb.innerHTML = '<span class="layer-thumb-icon">🌄</span>';
+        }
+      } else if (layer.type === "text") {
+        thumb.innerHTML = '<span class="layer-thumb-icon">Aa</span>';
+      }
+
+      // Layer Info
+      const info = document.createElement("div");
+      info.className = "layer-info";
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "layer-name";
+      nameSpan.textContent = layer.name;
+
+      const metaSpan = document.createElement("span");
+      metaSpan.className = "layer-meta";
+      const opPercent = Math.round((typeof layer.opacity === "number" ? layer.opacity : 1) * 100);
+      const filterTag = (layer.filter && layer.filter !== "none") ? ` • [${getFilterDisplayName(layer.filter)}]` : "";
+      metaSpan.textContent = `${layer.type.toUpperCase()} • ${opPercent}%${filterTag}`;
+
+      info.appendChild(nameSpan);
+      info.appendChild(metaSpan);
+
+      // Reorder buttons
+      const reorder = document.createElement("div");
+      reorder.className = "layer-quick-reorder";
+
+      const upBtn = document.createElement("button");
+      upBtn.type = "button";
+      upBtn.className = "layer-mini-btn";
+      upBtn.title = "Move Forward (Up)";
+      upBtn.textContent = "▲";
+      upBtn.disabled = isTop;
+      upBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        moveLayerUp(layer.id);
+      });
+
+      const downBtn = document.createElement("button");
+      downBtn.type = "button";
+      downBtn.className = "layer-mini-btn";
+      downBtn.title = "Move Backward (Down)";
+      downBtn.textContent = "▼";
+      downBtn.disabled = isBottom;
+      downBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        moveLayerDown(layer.id);
+      });
+
+      reorder.appendChild(upBtn);
+      reorder.appendChild(downBtn);
+
+      item.appendChild(visBtn);
+      item.appendChild(thumb);
+      item.appendChild(info);
+      item.appendChild(reorder);
+
+      // Delete button for image layers
+      if (layer.type === "image") {
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "layer-delete-btn";
+        delBtn.title = "Delete Layer";
+        delBtn.textContent = "✕";
+        delBtn.addEventListener("click", e => {
+          e.stopPropagation();
+          deleteLayer(layer.id);
+        });
+        item.appendChild(delBtn);
+      }
+
+      item.addEventListener("click", () => {
+        selectedLayerId = layer.id;
+        renderLayersUI();
+        updateDomLayers();
+      });
+
+      layersList.appendChild(item);
+    });
+
+    updateInspectorUI();
+  }
+
+  function updateInspectorUI() {
+    const layer = getSelectedLayer();
+    if (!layer) return;
+
+    if (inspectorLayerName) inspectorLayerName.textContent = layer.name;
+    if (inspectorLayerType) inspectorLayerType.textContent = layer.type.toUpperCase();
+
+    if (layerOpacityInput) {
+      layerOpacityInput.value = typeof layer.opacity === "number" ? layer.opacity : 1;
+      layerOpacityValue.textContent = Math.round(layerOpacityInput.value * 100) + "%";
+    }
+
+    const layerIdx = layers.findIndex(l => l.id === layer.id);
+    if (layerMoveUpBtn) layerMoveUpBtn.disabled = layerIdx === layers.length - 1;
+    if (layerMoveDownBtn) layerMoveDownBtn.disabled = layerIdx === 0;
+
+    if (layer.type === "image" || layer.type === "background") {
+      if (layerScaleRow) layerScaleRow.style.display = "flex";
+      if (bgAtmosphereRow) {
+        bgAtmosphereRow.style.display = "flex";
+        if (inspectorAtmosphereSelect) {
+          inspectorAtmosphereSelect.value = layer.filter || "none";
+        }
+      }
+      if (atmospherePresetSelect) {
+        atmospherePresetSelect.value = layer.filter || "none";
+        atmospherePresetSelect.disabled = false;
+        atmospherePresetSelect.title = `Filter for selected ${layer.type === "background" ? "background image" : `image: ${layer.name}`}`;
+      }
+      if (layerScaleInput) {
+        const currentScale = layer.type === "background" ? (bgScale || 1) : (layer.scale || 1);
+        layerScaleInput.value = currentScale;
+        layerScaleValue.textContent = Math.round(currentScale * 100) + "%";
+      }
+      if (layerCenterBtn) layerCenterBtn.style.display = "inline-flex";
+      if (layerDeleteBtn) {
+        if (layer.type === "background") {
+          layerDeleteBtn.style.display = bgImageObject ? "inline-flex" : "none";
+          layerDeleteBtn.textContent = "Clear BG";
+        } else {
+          layerDeleteBtn.style.display = "inline-flex";
+          layerDeleteBtn.textContent = "Delete";
+        }
+      }
+    } else {
+      if (layerScaleRow) layerScaleRow.style.display = "none";
+      if (bgAtmosphereRow) bgAtmosphereRow.style.display = "none";
+      if (atmospherePresetSelect) {
+        const bgLayer = layers.find(l => l.type === "background");
+        atmospherePresetSelect.value = (bgLayer && bgLayer.filter) ? bgLayer.filter : "none";
+        atmospherePresetSelect.disabled = false;
+        atmospherePresetSelect.title = "Filter (applies to background image)";
+      }
+      if (layerCenterBtn) layerCenterBtn.style.display = "inline-flex";
+      if (layerDeleteBtn) layerDeleteBtn.style.display = "none";
+    }
+  }
+
+  function moveLayerUp(layerId) {
+    const idx = layers.findIndex(l => l.id === layerId);
+    if (idx < 0 || idx >= layers.length - 1) return;
+    const temp = layers[idx];
+    layers[idx] = layers[idx + 1];
+    layers[idx + 1] = temp;
+    renderLayersUI();
+    updateDomLayers();
+    scheduleJpegPreview();
+  }
+
+  function moveLayerDown(layerId) {
+    const idx = layers.findIndex(l => l.id === layerId);
+    if (idx <= 0) return;
+    const temp = layers[idx];
+    layers[idx] = layers[idx - 1];
+    layers[idx - 1] = temp;
+    renderLayersUI();
+    updateDomLayers();
+    scheduleJpegPreview();
+  }
+
+  function deleteLayer(layerId) {
+    const targetLayer = layers.find(l => l.id === layerId);
+    if (!targetLayer) return;
+
+    if (targetLayer.type === "image") {
+      layers = layers.filter(l => l.id !== layerId);
+      if (selectedLayerId === layerId) {
+        selectedLayerId = layers[layers.length - 1] ? layers[layers.length - 1].id : "layer-text";
+      }
+      renderLayersUI();
+      updateDomLayers();
+      scheduleJpegPreview();
+    } else if (targetLayer.type === "background") {
+      removeBackgroundAction();
+    }
+  }
+
+  function centerLayer(layerId) {
+    const layer = layers.find(l => l.id === layerId);
+    if (!layer) return;
+
+    const cw = getCanvasWidth();
+    const ch = getCanvasHeight();
+
+    if (layer.type === "text") {
+      textOffsetX = DEFAULT_TEXT_OFFSET_X;
+      textOffsetY = DEFAULT_TEXT_OFFSET_Y;
+      updateTextPosition();
+    } else if (layer.type === "image" && layer.img) {
+      const w = layer.img.naturalWidth * (layer.scale || 1);
+      const h = layer.img.naturalHeight * (layer.scale || 1);
+      layer.x = Math.round((cw - w) / 2);
+      layer.y = Math.round((ch - h) / 2);
+      updateDomLayers();
+      scheduleJpegPreview();
+    } else if (layer.type === "background" && bgImageObject) {
+      const w = bgImageObject.naturalWidth * bgScale;
+      const h = bgImageObject.naturalHeight * bgScale;
+      bgX = Math.round((cw - w) / 2);
+      bgY = Math.round((ch - h) / 2);
+      updateBackgroundTransform();
+    }
+  }
+
+  function updateDomLayers() {
+    if (!overlayLayersContainer) return;
+
+    const bgLayer = layers.find(l => l.type === "background");
+    const textLayer = layers.find(l => l.type === "text");
+
+    const bgIdx = layers.findIndex(l => l.type === "background");
+    const textIdx = layers.findIndex(l => l.type === "text");
+
+    if (backgroundLayerDom) {
+      backgroundLayerDom.style.zIndex = bgIdx !== -1 ? (bgIdx + 1) : 1;
+      backgroundLayerDom.style.display = (bgLayer && bgLayer.visible !== false) ? "block" : "none";
+      backgroundLayerDom.style.opacity = bgLayer && typeof bgLayer.opacity === "number" ? bgLayer.opacity : 1;
+      if (backgroundImage) {
+        backgroundImage.style.filter = getCssFilterForPreset(bgLayer ? (bgLayer.filter || "none") : "none");
+      }
+    }
+
+    if (preview) {
+      preview.style.zIndex = textIdx !== -1 ? (textIdx + 1) : 2;
+      preview.style.display = (textLayer && textLayer.visible !== false) ? "block" : "none";
+      preview.style.opacity = textLayer && typeof textLayer.opacity === "number" ? textLayer.opacity : 1;
+    }
+
+    overlayLayersContainer.innerHTML = "";
+    layers.forEach((layer, index) => {
+      if (layer.type !== "image") return;
+      if (!layer.visible) return;
+
+      const imgEl = document.createElement("img");
+      imgEl.className = `overlay-img-item ${layer.id === selectedLayerId ? "is-selected" : ""}`;
+      imgEl.src = layer.dataUrl;
+      imgEl.alt = layer.name;
+      imgEl.style.zIndex = index + 1;
+      imgEl.style.opacity = typeof layer.opacity === "number" ? layer.opacity : 1;
+      imgEl.style.transform = `translate(${layer.x}px, ${layer.y}px) scale(${layer.scale || 1})`;
+      imgEl.style.filter = getCssFilterForPreset(layer.filter || "none");
+      imgEl.setAttribute("data-layer-id", layer.id);
+
+      overlayLayersContainer.appendChild(imgEl);
+    });
+
+    if (jpegPreviewImage) {
+      jpegPreviewImage.style.zIndex = "50";
+    }
+
+    updateSelectionBox();
+  }
+
+  function removeBackgroundAction() {
+    bgImageObject = null;
+    bgImageDataUrl = "";
+    backgroundImage.src = "";
+    backgroundImageInput.value = "";
+    bgX = 0;
+    bgY = 0;
+    bgScale = 1;
+    updateBackgroundTransform();
+    renderLayersUI();
+    updateDomLayers();
+    scheduleJpegPreview();
+  }
+
+  function getInlineColorRegex() {
+    return /!?\{#([0-9A-Fa-f]{3,8})\}/g;
+  }
+
+  function normalizeHexColor(hex) {
+    let h = String(hex || "").trim();
+    if (h.startsWith("#")) h = h.slice(1);
+    if (h.length === 3 || h.length === 4) {
+      h = h.split("").map(ch => ch + ch).join("");
+    }
+    if (h.length === 8) h = h.slice(0, 6);
+    if (!/^[0-9A-Fa-f]{6}$/.test(h)) return null;
+    return "#" + h.toUpperCase();
+  }
+
+  function stripInlineColorCodes(text) {
+    return String(text || "").replace(getInlineColorRegex(), "");
+  }
+
+  function stripChatMarkup(line) {
+    return stripInlineColorCodes(stripTimestamp(line));
+  }
+
+  function parseInlineColorCodes(text, defaultColor, className) {
+    const regex = getInlineColorRegex();
+    const segments = [];
+    let lastIndex = 0;
+    let currentColor = defaultColor;
+    let match;
+    let hasColorCodes = false;
+
+    while ((match = regex.exec(text)) !== null) {
+      hasColorCodes = true;
+      if (match.index > lastIndex) {
+        segments.push({
+          text: text.slice(lastIndex, match.index),
+          color: currentColor,
+          className,
+          isBlurred: false
+        });
+      }
+      const parsed = normalizeHexColor(match[1]);
+      if (parsed) currentColor = parsed;
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      segments.push({
+        text: text.slice(lastIndex),
+        color: currentColor,
+        className,
+        isBlurred: false
+      });
+    }
+
+    if (!hasColorCodes && text) {
+      return {
+        segments: [{ text, color: defaultColor, className, isBlurred: false }],
+        hasColorCodes: false
+      };
+    }
+
+    return {
+      segments: segments.filter(seg => seg.text.length > 0),
+      hasColorCodes
+    };
+  }
+
+  function getTimestampStrippedLine(line) {
+    return line.replace(TIMESTAMP_REGEX, "");
+  }
+
+  function stripTimestamp(line) {
+    return line.replace(TIMESTAMP_REGEX, "");
+  }
+
+  function splitCharacterKillLine(line) {
+    const match = line.match(/^(\[Character kill\])(\s*)(.*)$/i);
+
+    if (!match) {
+      return {
+        tag: "",
+        spacing: "",
+        rest: line
+      };
+    }
+
+    return {
+      tag: match[1],
+      spacing: match[2],
+      rest: match[3]
+    };
+  }
+
+  function getFontSize() {
+    const value = Number(fontSize.value);
+
+    if (Number.isNaN(value) || value <= 0) {
+      return 14;
+    }
+
+    return value;
+  }
+
+  function applyFontSizeFromTypedValue() {
+    const rawValue = fontSize.value.trim();
+
+    if (rawValue === "") {
+      return;
+    }
+
+    const value = Number(rawValue);
+
+    if (Number.isNaN(value) || value <= 0) {
+      return;
+    }
+
+    document.documentElement.style.setProperty("--chat-font-size", value + "px");
+  }
+
+  function normalizeFontSizeOnBlur() {
+    const rawValue = fontSize.value.trim();
+
+    if (rawValue === "") {
+      fontSize.value = 14;
+      document.documentElement.style.setProperty("--chat-font-size", "14px");
+      return;
+    }
+
+    let value = Number(rawValue);
+
+    if (Number.isNaN(value) || value <= 0) {
+      value = 14;
+    }
+
+    value = Math.min(Math.max(value, 8), 72);
+
+    fontSize.value = value;
+    document.documentElement.style.setProperty("--chat-font-size", value + "px");
+    render();
+    saveCurrentSettings();
+  }
+
+  function normalizeTextPanelWidthOnBlur() {
+    const rawValue = textPanelWidthInput.value.trim();
+
+    if (rawValue === "") {
+      textPanelWidthInput.value = 500;
+      updateTextPanelWidth();
+      saveCurrentSettings();
+      return;
+    }
+
+    let value = Number(rawValue);
+
+    if (Number.isNaN(value) || value < 50) {
+      value = 500;
+    }
+
+    value = Math.min(Math.max(value, 50), getMaxTextPanelWidth());
+    textPanelWidthInput.value = value;
+    updateTextPanelWidth();
+    saveCurrentSettings();
+  }
+
+  function normalizeTextPaddingOnBlur() {
+    if (!textPaddingInput) return;
+    const rawValue = textPaddingInput.value.trim();
+
+    if (rawValue === "") {
+      textPaddingInput.value = DEFAULT_SETTINGS.textPadding;
+      updateTextPosition();
+      saveCurrentSettings();
+      return;
+    }
+
+    let value = Number(rawValue);
+
+    if (Number.isNaN(value) || value < 0) {
+      value = DEFAULT_SETTINGS.textPadding;
+    }
+
+    value = Math.min(Math.max(value, 0), 80);
+    textPaddingInput.value = value;
+    document.documentElement.style.setProperty("--chat-text-padding", value + "px");
+    render();
+    saveCurrentSettings();
+  }
+
+  function normalizeCanvasWidthOnBlur() {
+    const rawValue = canvasWidthInput.value.trim();
+    if (rawValue === "") {
+      canvasWidthInput.value = 600;
+      updateCanvasStageSize();
+      saveCurrentSettings();
+      return;
+    }
+    let value = Number(rawValue);
+    if (Number.isNaN(value) || value < 100) {
+      value = 600;
+    }
+    value = Math.min(Math.max(value, 100), 4000);
+    canvasWidthInput.value = value;
+    updateCanvasStageSize();
+    saveCurrentSettings();
+  }
+
+  function normalizeCanvasHeightOnBlur() {
+    const rawValue = canvasHeightInput.value.trim();
+    if (rawValue === "") {
+      canvasHeightInput.value = 600;
+      updateCanvasStageSize();
+      saveCurrentSettings();
+      return;
+    }
+    let value = Number(rawValue);
+    if (Number.isNaN(value) || value < 100) {
+      value = 600;
+    }
+    value = Math.min(Math.max(value, 100), 4000);
+    canvasHeightInput.value = value;
+    updateCanvasStageSize();
+    saveCurrentSettings();
+  }
+
+  function escapeHtml(value) {
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function classifyLine(line) {
+    const text = line.trim();
+    const withoutTimestamp = stripChatMarkup(line).trimStart();
+    const lowerText = stripChatMarkup(text).toLowerCase();
+    const lowerWithoutTimestamp = withoutTimestamp.toLowerCase();
+
+    if (!text) return "default";
+
+    if (withoutTimestamp.startsWith("*")) {
+      return "me";
+    }
+
+    if (lowerWithoutTimestamp.startsWith("[character kill]")) {
+      return "characterkill";
+    }
+
+    if (lowerText.includes("(ifruit") && lowerText.includes("call")) {
+      return "phone";
+    }
+
+    if (lowerText.includes("(ifruit") && lowerText.includes("message")) {
+      return "phone";
+    }
+
+    if (
+      lowerText.includes("private message") ||
+      lowerText.includes("pm from") ||
+      lowerText.includes("pm to") ||
+      lowerText.includes("message from") ||
+      lowerText.includes("message sent to")
+    ) {
+      return "pm";
+    }
+
+    if (
+      lowerText.includes("((") ||
+      lowerText.includes("))") ||
+      lowerText.includes("[ooc]") ||
+      lowerText.includes(" ooc ")
+    ) {
+      return "ooc";
+    }
+
+    if (
+      lowerText.includes("administrator") ||
+      lowerText.includes("[admin]") ||
+      lowerText.includes("admin:")
+    ) {
+      return "admin";
+    }
+
+    if (
+      lowerText.includes("[helper]") ||
+      lowerText.includes("helper:")
+    ) {
+      return "helper";
+    }
+
+    if (
+      lowerText.includes("department radio") ||
+      lowerText.includes("[department]") ||
+      lowerText.includes("[dep]")
+    ) {
+      return "department";
+    }
+
+    if (
+      lowerText.includes("[radio]") ||
+      lowerText.includes(" radio:") ||
+      lowerText.includes("(radio)") ||
+      lowerText.includes("says [radio]:")
+    ) {
+      return "radio";
+    }
+
+    if (
+      lowerText.includes("advertisement") ||
+      lowerText.includes("[ad]") ||
+      lowerText.includes(" advertises:")
+    ) {
+      return "ad";
+    }
+
+    if (
+      lowerText.includes("rolls") ||
+      lowerText.includes("dice") ||
+      lowerText.includes("/dice")
+    ) {
+      return "dice";
+    }
+
+    if (
+      lowerText.includes("inventory") ||
+      lowerText.includes("you have") ||
+      lowerText.includes("you are carrying")
+    ) {
+      return "inventory";
+    }
+
+    if (
+      lowerText.includes("gives") ||
+      lowerText.includes("gave") ||
+      lowerText.includes("item given") ||
+      lowerText.includes("received item")
+    ) {
+      return "item";
+    }
+
+    if (
+      lowerText.includes("you paid") ||
+      lowerText.includes("you received") ||
+      lowerText.includes("paid you $") ||
+      lowerText.includes("paid you") ||
+      lowerText.includes("money paid") ||
+      lowerText.includes("paycheck") ||
+      lowerText.includes("salary")
+    ) {
+      return "money";
+    }
+
+    if (
+      lowerText.includes("usage:") ||
+      lowerText.includes("syntax:") ||
+      lowerText.includes("server:") ||
+      lowerText.includes("you can also use") ||
+      lowerText.includes("you are not allowed")
+    ) {
+      return "system";
+    }
+
+    if (
+      lowerText.includes("error:") ||
+      lowerText.includes("invalid command")
+    ) {
+      return "error";
+    }
+
+    if (
+      lowerText.includes(" says [lower]:")
+    ) {
+      return "lower";
+    }
+
+    if (
+      lowerText.includes(" says [low]:") ||
+      lowerText.includes(" says quietly:") ||
+      lowerText.includes(" murmurs:") ||
+      lowerText.includes(" mutters:")
+    ) {
+      return "low";
+    }
+
+    if (
+      lowerText.includes(" whispers:")
+    ) {
+      return "whisper";
+    }
+
+    if (
+      lowerText.includes(" shouts:") ||
+      lowerText.includes(" yells:") ||
+      lowerText.includes(" screams:")
+    ) {
+      return "shout";
+    }
+
+    if (
+      lowerText.includes(" says:")
+    ) {
+      return "say";
+    }
+
+    return "default";
+  }
+
+  function colorTimestamp(html) {
+    return html.replace(
+      TIMESTAMP_CAPTURE_REGEX,
+      '<span class="timestamp">$1</span>'
+    );
+  }
+
+  function renderCharacterKillLine(visibleLine) {
+    const safeLine = escapeHtml(visibleLine);
+    const parts = splitCharacterKillLine(safeLine);
+
+    if (!parts.tag) {
+      return `<span class="text-bg ck-red">${safeLine}</span>`;
+    }
+
+    return `<span class="text-bg"><span class="ck-blue">${parts.tag}</span>${parts.spacing}<span class="ck-red">${parts.rest}</span></span>`;
+  }
+
+  function parseBlurInSegments(segments) {
+    const BLUR_REGEX = /☘([^☘\r\n]+)☘/g;
+    const result = [];
+
+    for (const seg of segments) {
+      if (seg.className === "timestamp") {
+        result.push(seg);
+        continue;
+      }
+
+      let lastIndex = 0;
+      let match;
+
+      while ((match = BLUR_REGEX.exec(seg.text)) !== null) {
+        if (match.index > lastIndex) {
+          result.push({
+            text: seg.text.slice(lastIndex, match.index),
+            color: seg.color,
+            className: seg.className,
+            isBlurred: false
+          });
+        }
+        result.push({
+          text: match[1],
+          color: seg.color,
+          className: seg.className,
+          isBlurred: true
+        });
+        lastIndex = match.index + match[0].length;
+      }
+
+      if (lastIndex < seg.text.length) {
+        result.push({
+          text: seg.text.slice(lastIndex),
+          color: seg.color,
+          className: seg.className,
+          isBlurred: false
+        });
+      }
+    }
+
+    return result;
+  }
+
+  function getLineSegments(text, className, isCharacterKill) {
+    if (!text) return [];
+
+    const restText = stripTimestamp(text);
+    if (!restText) return [];
+
+    if (isCharacterKill) {
+      const visibleKill = stripInlineColorCodes(restText);
+      const parts = splitCharacterKillLine(visibleKill);
+      const ckSegments = [];
+      if (!parts.tag) {
+        ckSegments.push({ text: visibleKill, color: CHAT_COLORS.ckred, className: "ck-red", isBlurred: false });
+      } else {
+        ckSegments.push({ text: parts.tag, color: CHAT_COLORS.ckblue, className: "ck-blue", isBlurred: false });
+        if (parts.spacing) {
+          ckSegments.push({ text: parts.spacing, color: CHAT_COLORS.ckred, className: "ck-red", isBlurred: false });
+        }
+        if (parts.rest) {
+          ckSegments.push({ text: parts.rest, color: CHAT_COLORS.ckred, className: "ck-red", isBlurred: false });
+        }
+      }
+      return parseBlurInSegments(ckSegments);
+    }
+
+    const baseColor = CHAT_COLORS[className] || CHAT_COLORS.default;
+    const parsed = parseInlineColorCodes(restText, baseColor, className);
+
+    if (parsed.hasColorCodes) {
+      return parseBlurInSegments(parsed.segments);
+    }
+
+    const midSegments = [];
+
+    if (className === "me" || className === "ame" || className === "do") {
+      midSegments.push({ text: restText, color: CHAT_COLORS.me, className: "me", isBlurred: false });
+    } else {
+      const ASTERISK_REGEX = /\*([^*\r\n]+)\*/g;
+      let lastIndex = 0;
+      let match;
+
+      while ((match = ASTERISK_REGEX.exec(restText)) !== null) {
+        if (match.index > lastIndex) {
+          midSegments.push({
+            text: restText.slice(lastIndex, match.index),
+            color: baseColor,
+            className: className,
+            isBlurred: false
+          });
+        }
+        midSegments.push({
+          text: match[1],
+          color: CHAT_COLORS.me,
+          className: "me",
+          isBlurred: false
+        });
+        lastIndex = match.index + match[0].length;
+      }
+
+      if (lastIndex < restText.length) {
+        midSegments.push({
+          text: restText.slice(lastIndex),
+          color: baseColor,
+          className: className,
+          isBlurred: false
+        });
+      }
+    }
+
+    return parseBlurInSegments(midSegments);
+  }
+
+  function sliceSegments(segments, startIndex, length) {
+    const result = [];
+    let currentPos = 0;
+    const targetEnd = startIndex + length;
+
+    for (const seg of segments) {
+      const segStart = currentPos;
+      const segEnd = currentPos + seg.text.length;
+      currentPos = segEnd;
+
+      if (segEnd <= startIndex || segStart >= targetEnd) {
+        continue;
+      }
+
+      const sliceStart = Math.max(0, startIndex - segStart);
+      const sliceEnd = Math.min(seg.text.length, targetEnd - segStart);
+      const textSlice = seg.text.slice(sliceStart, sliceEnd);
+
+      if (textSlice) {
+        result.push({
+          text: textSlice,
+          color: seg.color,
+          className: seg.className,
+          isBlurred: Boolean(seg.isBlurred)
+        });
+      }
+    }
+
+    return result;
+  }
+
+  function render() {
+    const lines = input.value.split("\n").map((rawLine) => {
+      if (rawLine.trim() === "") {
+        return `<span class="line blank-line">&nbsp;</span>`;
+      }
+
+      const visibleLine = stripTimestamp(rawLine);
+      const className = classifyLine(rawLine);
+      const isCharacterKill = className === "characterkill";
+
+      const segments = getLineSegments(visibleLine, className, isCharacterKill);
+      const innerHtml = segments.map(seg => {
+        const escaped = escapeHtml(seg.text);
+        const colorStyle = seg.color ? ` style="color:${seg.color}"` : "";
+        let content = `<span class="${seg.className || ""}"${colorStyle}>${escaped}</span>`;
+
+        if (seg.isBlurred) {
+          return `<span class="blurred-text">${content}</span>`;
+        }
+        return content;
+      }).join("");
+
+      return `<span class="line"><span class="text-bg ${className}">${innerHtml}</span></span>`;
+    });
+
+    preview.innerHTML = lines.join("");
+    updateTextPosition();
+  }
+
+  function getVisibleLinesForCanvas() {
+    return input.value.split("\n").map(rawLine => {
+      const isBlank = rawLine.trim() === "";
+      const visibleText = stripTimestamp(rawLine);
+      const className = classifyLine(rawLine);
+      const isCharacterKill = className === "characterkill";
+
+      const segments = getLineSegments(visibleText, className, isCharacterKill);
+      const displayText = segments.length > 0 ? segments.map(seg => seg.text).join("") : visibleText;
+
+      return {
+        raw: rawLine,
+        text: displayText,
+        className,
+        color: CHAT_COLORS[className] || CHAT_COLORS.default,
+        isBlank,
+        isCharacterKill,
+        segments
+      };
+    });
+  }
+
+  function wrapText(ctx, text, maxWidth) {
+    if (!text) return [""];
+    if (maxWidth <= 0) return [text];
+
+    const words = text.split(/(\s+)/);
+    const lines = [];
+    let current = "";
+
+    for (const token of words) {
+      if (!token) continue;
+      const test = current + token;
+
+      if (ctx.measureText(test).width <= maxWidth) {
+        current = test;
+      } else {
+        if (current.trimEnd()) {
+          lines.push(current.trimEnd());
+        }
+        current = token.trimStart();
+
+        if (ctx.measureText(current).width > maxWidth) {
+          const broken = breakLongToken(ctx, current, maxWidth);
+          for (let i = 0; i < broken.length - 1; i++) {
+            lines.push(broken[i]);
+          }
+          current = broken[broken.length - 1] || "";
+        }
+      }
+    }
+
+    if (current && current.trimEnd()) {
+      if (ctx.measureText(current.trimEnd()).width > maxWidth) {
+        const broken = breakLongToken(ctx, current.trimEnd(), maxWidth);
+        lines.push(...broken);
+      } else {
+        lines.push(current.trimEnd());
+      }
+    }
+
+    return lines.length > 0 ? lines : [""];
+  }
+
+  function breakLongToken(ctx, token, maxWidth) {
+    const parts = [];
+    let current = "";
+
+    for (const char of token) {
+      const test = current + char;
+
+      if (ctx.measureText(test).width <= maxWidth || current === "") {
+        current = test;
+      } else {
+        parts.push(current);
+        current = char;
+      }
+    }
+
+    if (current) {
+      parts.push(current);
+    }
+
+    return parts;
+  }
+
+  function measureTextBox() {
+    const fontPx = getFontSize();
+    const lineHeight = Math.round(fontPx * 1.25);
+    const innerX = 4;
+    const innerY = 2;
+    const boxPad = getTextPadding();
+    const canvasWidth = getCanvasWidth();
+    const canvasHeight = getCanvasHeight();
+    const maxTextWidth = getEffectiveTextPanelWidth();
+
+    const measuringCanvas = document.createElement("canvas");
+    const ctx = measuringCanvas.getContext("2d");
+    ctx.font = `700 ${fontPx}px ${getFontFamily()}`;
+
+    const sourceLines = getVisibleLinesForCanvas();
+
+    let maxWidth = 1;
+    let rowCount = 0;
+
+    sourceLines.forEach(line => {
+      if (line.isBlank) {
+        rowCount += 1;
+        return;
+      }
+
+      const wrapped = wrapText(ctx, line.text, maxTextWidth);
+
+      wrapped.forEach(part => {
+        maxWidth = Math.max(maxWidth, Math.ceil(ctx.measureText(part || " ").width));
+        rowCount += 1;
+      });
+    });
+
+    const remainingWidth = Math.max(20, canvasWidth - Math.max(0, textOffsetX));
+    const remainingHeight = Math.max(lineHeight, canvasHeight - Math.max(0, textOffsetY));
+
+    return {
+      width: Math.max(20, Math.min(maxWidth + innerX * 2 + boxPad * 2, maxTextWidth + boxPad * 2, remainingWidth)),
+      height: Math.max(lineHeight, Math.min(rowCount * lineHeight + innerY * 2 + boxPad * 2, remainingHeight))
+    };
+  }
+
+  function getTextBounds() {
+    const size = measureTextBox();
+    return {
+      x: textOffsetX,
+      y: textOffsetY,
+      width: size.width,
+      height: size.height
+    };
+  }
+
+  function pointIsInsideTextBounds(x, y) {
+    const bounds = getTextBounds();
+
+    return (
+      x >= bounds.x &&
+      x <= bounds.x + bounds.width &&
+      y >= bounds.y &&
+      y <= bounds.y + bounds.height
+    );
+  }
+
+  function updateSelectionBox() {
+    if (!selectionBox) return;
+    const selected = getSelectedLayer();
+    if (!selected || selected.visible === false) {
+      selectionBox.style.display = "none";
+      return;
+    }
+
+    if (selected.type === "image" && selected.img) {
+      const w = Math.round((selected.img.naturalWidth || selected.width || 50) * (selected.scale || 1));
+      const h = Math.round((selected.img.naturalHeight || selected.height || 50) * (selected.scale || 1));
+      selectionBox.style.display = "block";
+      selectionBox.style.left = Math.round(selected.x) + "px";
+      selectionBox.style.top = Math.round(selected.y) + "px";
+      selectionBox.style.width = w + "px";
+      selectionBox.style.height = h + "px";
+    } else if (selected.type === "text") {
+      const bounds = getTextBounds();
+      const canvasWidth = getCanvasWidth();
+      const canvasHeight = getCanvasHeight();
+      const left = Math.max(0, bounds.x);
+      const top = Math.max(0, bounds.y);
+      const right = Math.min(canvasWidth, bounds.x + bounds.width);
+      const bottom = Math.min(canvasHeight, bounds.y + bounds.height);
+      const width = Math.max(0, right - left);
+      const height = Math.max(0, bottom - top);
+      if (width < 1 || height < 1) {
+        selectionBox.style.display = "none";
+      } else {
+        selectionBox.style.display = "block";
+        selectionBox.style.left = Math.round(left) + "px";
+        selectionBox.style.top = Math.round(top) + "px";
+        selectionBox.style.width = Math.round(width) + "px";
+        selectionBox.style.height = Math.round(height) + "px";
+      }
+    } else {
+      selectionBox.style.display = "none";
+    }
+  }
+
+  function drawGaussianCensoredText(ctx, text, x, y, fillStyle, lineHeight, blurStrength, outline) {
+    const textWidth = Math.ceil(ctx.measureText(text).width);
+    if (textWidth <= 0 || lineHeight <= 0) return;
+
+    const blur = Math.max(1, Math.min(Math.round(blurStrength), 20));
+    const pad = Math.ceil(blur * 1.5) + 4;
+    const w = textWidth + pad * 2;
+    const h = lineHeight + pad * 2;
+
+    const offscreen = document.createElement("canvas");
+    offscreen.width = w;
+    offscreen.height = h;
+    const octx = offscreen.getContext("2d");
+
+    octx.font = ctx.font;
+    octx.textBaseline = "top";
+    octx.lineJoin = "round";
+
+    // Smooth Gaussian blur filter on isolated buffer
+    octx.filter = `blur(${blur}px)`;
+
+    // Drop shadow for contrast and depth
+    octx.shadowColor = "rgba(0,0,0,0.85)";
+    octx.shadowOffsetX = 1;
+    octx.shadowOffsetY = 1;
+    octx.shadowBlur = Math.max(1, Math.round(blur * 0.4));
+
+    // Fill with true chat color so it glows softly without muddy black strokes
+    octx.fillStyle = fillStyle;
+    octx.fillText(text, pad, pad);
+    octx.fillText(text, pad, pad);
+
+    // Strictly clip on destination canvas to keep adjacent text clean and unblurred
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x - 1, y - 1, textWidth + 2, lineHeight + 2);
+    ctx.clip();
+    ctx.drawImage(offscreen, x - pad, y - pad);
+    ctx.restore();
+  }
+
+  function drawMosaicCensoredText(ctx, text, x, y, fillStyle, lineHeight, blockSize, outline) {
+    const textWidth = Math.ceil(ctx.measureText(text).width);
+    if (textWidth <= 0 || lineHeight <= 0) return;
+
+    const block = Math.max(3, Math.min(Math.round(blockSize), 20));
+
+    // First render the text normally on canvas so stroke, color, and background integrate seamlessly
+    ctx.save();
+    if (outline.style === "stroke" || outline.style === "both") {
+      ctx.lineWidth = outline.thickness;
+      ctx.strokeStyle = "rgba(0,0,0,0.88)";
+      ctx.strokeText(text, x, y);
+    }
+    if (outline.style === "shadow" || outline.style === "both") {
+      ctx.shadowColor = "rgba(0,0,0,0.95)";
+      ctx.shadowOffsetX = outline.thickness;
+      ctx.shadowOffsetY = outline.thickness;
+      ctx.shadowBlur = Math.max(2, outline.thickness * 1.6);
+    }
+    ctx.fillStyle = fillStyle;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+
+    // Downscale and upscale with nearest-neighbor to produce true, crisp mosaic pixel blocks
+    const sx = Math.max(0, Math.floor(x - 1));
+    const sy = Math.max(0, Math.floor(y - 1));
+    const sw = Math.min(ctx.canvas.width - sx, Math.ceil(textWidth + 2));
+    const sh = Math.min(ctx.canvas.height - sy, Math.ceil(lineHeight + 2));
+
+    if (sw <= 0 || sh <= 0) return;
+
+    const downW = Math.max(1, Math.round(sw / block));
+    const downH = Math.max(1, Math.round(sh / block));
+
+    const downCanvas = document.createElement("canvas");
+    downCanvas.width = downW;
+    downCanvas.height = downH;
+    const dctx = downCanvas.getContext("2d");
+
+    dctx.drawImage(ctx.canvas, sx, sy, sw, sh, 0, 0, downW, downH);
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(downCanvas, 0, 0, downW, downH, sx, sy, sw, sh);
+    ctx.restore();
+  }
+
+  function drawTextWithStroke(ctx, text, x, y, fillStyle, isBlurred = false, lineHeight = 18) {
+    const censor = getCensorSettings();
+    const outline = getOutlineSettings();
+
+    if (isBlurred) {
+      if (censor.mode === "redact") {
+        const textWidth = Math.ceil(ctx.measureText(text).width);
+        ctx.save();
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(x - 1, y, textWidth + 2, lineHeight);
+        ctx.restore();
+        return;
+      }
+
+      if (censor.mode === "mosaic") {
+        drawMosaicCensoredText(ctx, text, x, y, fillStyle, lineHeight, censor.blurStrength, outline);
+        return;
+      }
+
+      if (censor.mode === "blur") {
+        drawGaussianCensoredText(ctx, text, x, y, fillStyle, lineHeight, censor.blurStrength, outline);
+        return;
+      }
+    }
+
+    ctx.save();
+    if (outline.style === "stroke" || outline.style === "both") {
+      ctx.lineWidth = outline.thickness;
+      ctx.strokeStyle = "rgba(0,0,0,0.88)";
+      ctx.strokeText(text, x, y);
+    }
+
+    if (outline.style === "shadow" || outline.style === "both") {
+      ctx.shadowColor = "rgba(0,0,0,0.95)";
+      ctx.shadowOffsetX = outline.thickness;
+      ctx.shadowOffsetY = outline.thickness;
+      ctx.shadowBlur = Math.max(2, outline.thickness * 1.6);
+    }
+
+    ctx.fillStyle = fillStyle;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function drawLineWithTimestamp(ctx, text, classColor, x, y, lineHeight = 18) {
+    drawTextWithStroke(ctx, text, x, y, classColor, false, lineHeight);
+  }
+
+  function drawCharacterKillLine(ctx, text, x, y, lineHeight = 18) {
+    let currentX = x;
+    const parts = splitCharacterKillLine(text);
+
+    if (!parts.tag) {
+      drawTextWithStroke(ctx, text, currentX, y, CHAT_COLORS.ckred, false, lineHeight);
+      return;
+    }
+
+    drawTextWithStroke(ctx, parts.tag, currentX, y, CHAT_COLORS.ckblue, false, lineHeight);
+    currentX += ctx.measureText(parts.tag).width;
+
+    drawTextWithStroke(ctx, parts.spacing, currentX, y, CHAT_COLORS.ckred, false, lineHeight);
+    currentX += ctx.measureText(parts.spacing).width;
+
+    drawTextWithStroke(ctx, parts.rest, currentX, y, CHAT_COLORS.ckred, false, lineHeight);
+  }
+
+  function roundedRect(ctx, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + width, y, x + width, y + height, r);
+    ctx.arcTo(x + width, y + height, x, y + height, r);
+    ctx.arcTo(x, y + height, x, y, r);
+    ctx.arcTo(x, y, x + width, y, r);
+    ctx.closePath();
+  }
+
+  function buildWrappedRows(ctx, maxTextWidth) {
+    const sourceLines = getVisibleLinesForCanvas();
+    const wrappedRows = [];
+
+    sourceLines.forEach(line => {
+      if (line.isBlank) {
+        wrappedRows.push({
+          text: "",
+          color: line.color,
+          className: line.className,
+          isContinuation: false,
+          isBlank: true,
+          isCharacterKill: false,
+          segments: []
+        });
+        return;
+      }
+
+      const wrapped = wrapText(ctx, line.text, maxTextWidth);
+
+      let cursor = 0;
+      wrapped.forEach((part, index) => {
+        const partIndex = line.text.indexOf(part, cursor);
+        const actualStart = partIndex !== -1 ? partIndex : cursor;
+        cursor = actualStart + part.length;
+        const rowSegments = sliceSegments(line.segments, actualStart, part.length);
+
+        wrappedRows.push({
+          text: part,
+          color: line.color,
+          className: line.className,
+          isContinuation: index > 0,
+          isBlank: false,
+          isCharacterKill: line.isCharacterKill,
+          segments: rowSegments
+        });
+      });
+    });
+
+    if (wrappedRows.length === 0) {
+      wrappedRows.push({
+        text: "",
+        color: CHAT_COLORS.default,
+        className: "default",
+        isContinuation: false,
+        isBlank: true,
+        isCharacterKill: false,
+        segments: []
+      });
+    }
+
+    return wrappedRows;
+  }
+
+  let sharedChatCanvas = null;
+  let jpegPreviewPending = false;
+
+  function scheduleJpegPreview() {
+    if (jpegPreviewPending) return;
+    jpegPreviewPending = true;
+    requestAnimationFrame(() => {
+      jpegPreviewPending = false;
+      renderJpegPreview();
+    });
+  }
+
+  function getJpegQuality() {
+    const value = Number(jpegQualityInput.value);
+    if (Number.isNaN(value) || value <= 0) return 1;
+    return Math.min(Math.max(value, 0.01), 1);
+  }
+
+  function renderJpegPreview() {
+    try {
+      if (!sharedChatCanvas) {
+        sharedChatCanvas = document.createElement("canvas");
+      }
+      const canvas = createChatCanvas(sharedChatCanvas);
+      const quality = getJpegQuality();
+      const dataUrl = canvas.toDataURL("image/jpeg", quality);
+      if (jpegPreviewImage) {
+        jpegPreviewImage.src = dataUrl;
+        jpegPreviewImage.style.display = "block";
+        jpegPreviewImage.style.zIndex = "50";
+      }
+      updateSelectionBox();
+    } catch (err) {
+      console.error("Failed to render real-time JPEG preview:", err);
+    }
+  }
+
+  function drawTextLayerToCanvas(ctx, fontPx, fontFamily, lineHeight, maxTextWidth) {
+    ctx.font = `700 ${fontPx}px ${fontFamily}`;
+    ctx.textBaseline = "top";
+    ctx.lineJoin = "round";
+
+    const boxPad = getTextPadding();
+    const innerX = 4;
+    const innerY = 2;
+    const originX = textOffsetX + boxPad;
+    const originY = textOffsetY + boxPad;
+
+    const wrappedRows = buildWrappedRows(ctx, maxTextWidth);
+
+    wrappedRows.forEach((row, index) => {
+      const y = originY + innerY + index * lineHeight;
+
+      if (row.isBlank) {
+        return;
+      }
+
+      const textWidth = Math.ceil(ctx.measureText(row.text || " ").width);
+
+      if (backgroundToggle.checked) {
+        ctx.fillStyle = "rgba(0,0,0,0.84)";
+        roundedRect(
+          ctx,
+          originX,
+          y - 1,
+          textWidth + innerX * 2,
+          lineHeight,
+          0
+        );
+        ctx.fill();
+      }
+
+      if (row.segments && row.segments.length > 0) {
+        let currentX = originX + innerX;
+        row.segments.forEach(seg => {
+          drawTextWithStroke(ctx, seg.text, currentX, y, seg.color, seg.isBlurred, lineHeight);
+          currentX += ctx.measureText(seg.text).width;
+        });
+      } else if (row.isCharacterKill) {
+        drawCharacterKillLine(
+          ctx,
+          row.text,
+          originX + innerX,
+          y,
+          lineHeight
+        );
+      } else {
+        drawLineWithTimestamp(
+          ctx,
+          row.text,
+          row.color,
+          originX + innerX,
+          y,
+          lineHeight
+        );
+      }
+    });
+  }
+
+  function createChatCanvas(targetCanvas = null) {
+    const scale = 1;
+    const fontPx = getFontSize();
+    const fontFamily = getFontFamily();
+    const lineHeight = Math.round(fontPx * 1.25);
+    const maxTextWidth = getEffectiveTextPanelWidth();
+
+    const canvasWidth = getCanvasWidth();
+    const canvasHeight = getCanvasHeight();
+
+    const canvas = targetCanvas || document.createElement("canvas");
+    if (canvas.width !== canvasWidth * scale || canvas.height !== canvasHeight * scale) {
+      canvas.width = canvasWidth * scale;
+      canvas.height = canvasHeight * scale;
+    }
+    canvas.style.width = canvasWidth + "px";
+    canvas.style.height = canvasHeight + "px";
+
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(scale, scale);
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    layers.forEach(layer => {
+      if (!layer.visible) return;
+
+      ctx.save();
+      ctx.globalAlpha = typeof layer.opacity === "number" ? layer.opacity : 1;
+
+      if (layer.type === "background") {
+        if (bgImageObject && bgImageObject.complete && bgImageObject.naturalWidth > 0) {
+          const bgPreset = layer.filter || "none";
+          const filterStr = getCanvasFilterForPreset(bgPreset);
+
+          if (filterStr && filterStr !== "none") {
+            ctx.filter = filterStr;
+          }
+
+          ctx.drawImage(
+            bgImageObject,
+            bgX,
+            bgY,
+            bgImageObject.naturalWidth * bgScale,
+            bgImageObject.naturalHeight * bgScale
+          );
+
+          ctx.filter = "none";
+
+          if (bgPreset === "sunset") {
+            ctx.save();
+            ctx.globalCompositeOperation = "overlay";
+            ctx.fillStyle = "rgba(255, 140, 20, 0.16)";
+            ctx.fillRect(
+              bgX,
+              bgY,
+              bgImageObject.naturalWidth * bgScale,
+              bgImageObject.naturalHeight * bgScale
+            );
+            ctx.restore();
+          }
+
+          if (isVignetteEnabled()) {
+            drawVignette(ctx, canvasWidth, canvasHeight, getVignetteStrength());
+          }
+
+          if (isFilmGrainEnabled()) {
+            drawFilmGrain(ctx, canvasWidth, canvasHeight, getFilmGrainStrength());
+          }
+        } else {
+          if (isVignetteEnabled()) {
+            drawVignette(ctx, canvasWidth, canvasHeight, getVignetteStrength());
+          }
+          if (isFilmGrainEnabled()) {
+            drawFilmGrain(ctx, canvasWidth, canvasHeight, getFilmGrainStrength());
+          }
+        }
+      } else if (layer.type === "image") {
+        if (layer.img && layer.img.complete && layer.img.naturalWidth > 0) {
+          const imgPreset = layer.filter || "none";
+          const imgFilterStr = getCanvasFilterForPreset(imgPreset);
+          if (imgFilterStr && imgFilterStr !== "none") {
+            ctx.filter = imgFilterStr;
+          }
+
+          const imgW = layer.img.naturalWidth * (layer.scale || 1);
+          const imgH = layer.img.naturalHeight * (layer.scale || 1);
+
+          ctx.drawImage(
+            layer.img,
+            layer.x,
+            layer.y,
+            imgW,
+            imgH
+          );
+
+          ctx.filter = "none";
+
+          if (imgPreset === "sunset") {
+            ctx.save();
+            ctx.globalCompositeOperation = "overlay";
+            ctx.fillStyle = "rgba(255, 140, 20, 0.16)";
+            ctx.fillRect(
+              layer.x,
+              layer.y,
+              imgW,
+              imgH
+            );
+            ctx.restore();
+          }
+        }
+      } else if (layer.type === "text") {
+        drawTextLayerToCanvas(ctx, fontPx, fontFamily, lineHeight, maxTextWidth);
+      }
+
+      ctx.restore();
+    });
+
+    return canvas;
+  }
+
+  async function getExportCanvas() {
+    const canvas = createChatCanvas();
+    const quality = getJpegQuality();
+    if (quality >= 0.98) {
+      return canvas;
+    }
+    const jpegDataUrl = canvas.toDataURL("image/jpeg", quality);
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = jpegDataUrl;
+    });
+    const bakedCanvas = document.createElement("canvas");
+    bakedCanvas.width = canvas.width;
+    bakedCanvas.height = canvas.height;
+    const ctx = bakedCanvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    return bakedCanvas;
+  }
+
+  async function copyCanvasAsPng() {
+    const canvas = await getExportCanvas();
+
+    if (!navigator.clipboard || !window.ClipboardItem) {
+      throw new Error("PNG clipboard copying is not supported in this browser.");
+    }
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "image/png": blob
+      })
+    ]);
+  }
+
+  async function downloadCanvasAsPng() {
+    try {
+      const canvas = await getExportCanvas();
+      const link = document.createElement("a");
+      link.download = "gta-rp-chatlog.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      console.error("Failed to download PNG:", err);
+      showToast("error", "Download Failed", err?.message || "Could not generate PNG for download.");
+    }
+  }
+
+  function downloadCanvasAsJpeg() {
+    try {
+      const canvas = createChatCanvas();
+      const quality = getJpegQuality();
+      const link = document.createElement("a");
+      link.download = "gta-rp-chatlog.jpeg";
+      link.href = canvas.toDataURL("image/jpeg", quality);
+      link.click();
+    } catch (err) {
+      console.error("Failed to download JPEG:", err);
+      showToast("error", "Download Failed", err?.message || "Could not generate JPEG for download.");
+    }
+  }
+
+  function getStagePoint(event) {
+    const rect = canvasStage.getBoundingClientRect();
+    const borderLeft = canvasStage.clientLeft || 0;
+    const borderTop = canvasStage.clientTop || 0;
+    const clientW = canvasStage.clientWidth || getCanvasWidth();
+    const clientH = canvasStage.clientHeight || getCanvasHeight();
+    const scaleX = getCanvasWidth() / (clientW || 1);
+    const scaleY = getCanvasHeight() / (clientH || 1);
+
+    return {
+      x: ((event.clientX - rect.left) - borderLeft) * scaleX,
+      y: ((event.clientY - rect.top) - borderTop) * scaleY
+    };
+  }
+
+  function findLayerAtPoint(pointX, pointY) {
+    for (let i = layers.length - 1; i >= 0; i--) {
+      const layer = layers[i];
+      if (!layer.visible) continue;
+
+      if (layer.type === "text") {
+        if (pointIsInsideTextBounds(pointX, pointY)) {
+          return layer;
+        }
+      } else if (layer.type === "image") {
+        if (layer.img && layer.img.naturalWidth > 0) {
+          const w = layer.img.naturalWidth * (layer.scale || 1);
+          const h = layer.img.naturalHeight * (layer.scale || 1);
+          if (
+            pointX >= layer.x &&
+            pointX <= layer.x + w &&
+            pointY >= layer.y &&
+            pointY <= layer.y + h
+          ) {
+            return layer;
+          }
+        }
+      } else if (layer.type === "background") {
+        if (bgImageObject && bgImageObject.complete && bgImageObject.naturalWidth > 0) {
+          return layer;
+        }
+      }
+    }
+    return null;
+  }
+
+  canvasStage.addEventListener("mousedown", event => {
+    const point = getStagePoint(event);
+    const hitLayer = findLayerAtPoint(point.x, point.y);
+
+    if (hitLayer) {
+      selectedLayerId = hitLayer.id;
+      renderLayersUI();
+      updateDomLayers();
+
+      dragStartX = point.x;
+      dragStartY = point.y;
+      canvasStage.classList.add("dragging");
+      event.preventDefault();
+
+      if (hitLayer.type === "text") {
+        dragMode = "text";
+        originalTextX = textOffsetX;
+        originalTextY = textOffsetY;
+      } else if (hitLayer.type === "image") {
+        dragMode = "image";
+        draggingLayerId = hitLayer.id;
+        originalLayerX = hitLayer.x;
+        originalLayerY = hitLayer.y;
+      } else if (hitLayer.type === "background") {
+        dragMode = "background";
+        originalBgX = bgX;
+        originalBgY = bgY;
+      }
+    }
+  });
+
+  window.addEventListener("mousemove", event => {
+    if (!dragMode) {
+      return;
+    }
+
+    const point = getStagePoint(event);
+    const dx = point.x - dragStartX;
+    const dy = point.y - dragStartY;
+
+    if (dragMode === "text") {
+      textOffsetX = originalTextX + dx;
+      textOffsetY = originalTextY + dy;
+      updateTextPosition();
+    } else if (dragMode === "image") {
+      const layer = layers.find(l => l.id === draggingLayerId);
+      if (layer) {
+        layer.x = originalLayerX + dx;
+        layer.y = originalLayerY + dy;
+        updateDomLayers();
+        scheduleJpegPreview();
+      }
+    } else if (dragMode === "background") {
+      bgX = originalBgX + dx;
+      bgY = originalBgY + dy;
+      updateBackgroundTransform();
+    }
+  });
+
+  window.addEventListener("mouseup", () => {
+    dragMode = null;
+    draggingLayerId = null;
+    canvasStage.classList.remove("dragging");
+  });
+
+  canvasStage.addEventListener("wheel", event => {
+    const point = getStagePoint(event);
+    const hitLayer = findLayerAtPoint(point.x, point.y) || getSelectedLayer();
+    if (!hitLayer) return;
+
+    const zoomFactor = event.deltaY < 0 ? 1.08 : 0.92;
+
+    if (hitLayer.type === "image") {
+      event.preventDefault();
+      hitLayer.scale = Math.min(Math.max((hitLayer.scale || 1) * zoomFactor, 0.05), 10);
+      updateDomLayers();
+      updateInspectorUI();
+      scheduleJpegPreview();
+    } else if (hitLayer.type === "background" && bgImageObject) {
+      event.preventDefault();
+      const previousScale = bgScale;
+      bgScale = Math.min(Math.max(bgScale * zoomFactor, 0.05), 10);
+
+      const imagePointX = (point.x - bgX) / previousScale;
+      const imagePointY = (point.y - bgY) / previousScale;
+
+      bgX = point.x - imagePointX * bgScale;
+      bgY = point.y - imagePointY * bgScale;
+
+      updateBackgroundTransform();
+      updateInspectorUI();
+    }
+  }, { passive: false });
+
+  canvasStage.addEventListener("mousemove", event => {
+    if (dragMode) return;
+    const point = getStagePoint(event);
+    const hit = findLayerAtPoint(point.x, point.y);
+    if (hit) {
+      if (hit.type === "text" || hit.type === "image") {
+        canvasStage.style.cursor = "move";
+      } else if (hit.type === "background") {
+        canvasStage.style.cursor = "grab";
+      }
+    } else {
+      canvasStage.style.cursor = "default";
+    }
+  });
+
+  canvasStage.addEventListener("mouseleave", () => {
+    if (!dragMode) {
+      canvasStage.style.cursor = "default";
+    }
+  });
+
+  fontSize.addEventListener("input", () => {
+    applyFontSizeFromTypedValue();
+    render();
+    saveCurrentSettingsDebounced();
+  });
+
+  fontSize.addEventListener("blur", () => {
+    normalizeFontSizeOnBlur();
+    saveCurrentSettings();
+  });
+
+  fontSize.addEventListener("change", () => {
+    normalizeFontSizeOnBlur();
+    saveCurrentSettings();
+  });
+
+  textPanelWidthInput.addEventListener("input", () => {
+    updateTextPanelWidth();
+    saveCurrentSettingsDebounced();
+  });
+
+  textPanelWidthInput.addEventListener("blur", () => {
+    normalizeTextPanelWidthOnBlur();
+    saveCurrentSettings();
+  });
+
+  textPanelWidthInput.addEventListener("change", () => {
+    normalizeTextPanelWidthOnBlur();
+    saveCurrentSettings();
+  });
+
+  if (textPaddingInput) {
+    textPaddingInput.addEventListener("input", () => {
+      document.documentElement.style.setProperty("--chat-text-padding", getTextPadding() + "px");
+      render();
+      saveCurrentSettingsDebounced();
+    });
+    textPaddingInput.addEventListener("blur", () => {
+      normalizeTextPaddingOnBlur();
+    });
+    textPaddingInput.addEventListener("change", () => {
+      normalizeTextPaddingOnBlur();
+    });
+  }
+
+  jpegQualityInput.addEventListener("input", () => {
+    const qualityPercent = Math.round(jpegQualityInput.value * 100);
+    jpegQualityValue.textContent = qualityPercent + "%";
+    scheduleJpegPreview();
+    saveCurrentSettingsDebounced();
+  });
+
+  jpegQualityInput.addEventListener("change", () => {
+    const qualityPercent = Math.round(jpegQualityInput.value * 100);
+    jpegQualityValue.textContent = qualityPercent + "%";
+    scheduleJpegPreview();
+    saveCurrentSettings();
+  });
+
+  backgroundToggle.addEventListener("change", () => {
+    preview.classList.toggle("no-text-background", !backgroundToggle.checked);
+    scheduleJpegPreview();
+    saveCurrentSettings();
+  });
+
+  fontFamilySelect.addEventListener("change", () => {
+    updateFontFamily();
+    saveCurrentSettings();
+  });
+  outlineStyleSelect.addEventListener("change", () => {
+    updateOutlineSettings();
+    saveCurrentSettings();
+  });
+  strokeWidthInput.addEventListener("input", () => {
+    updateOutlineSettings();
+    saveCurrentSettingsDebounced();
+  });
+  strokeWidthInput.addEventListener("change", () => {
+    updateOutlineSettings();
+    saveCurrentSettings();
+  });
+  censorStyleSelect.addEventListener("change", () => {
+    updateCensorSettings();
+    saveCurrentSettings();
+  });
+  blurStrengthInput.addEventListener("input", () => {
+    updateCensorSettings();
+    saveCurrentSettingsDebounced();
+  });
+  blurStrengthInput.addEventListener("change", () => {
+    updateCensorSettings();
+    saveCurrentSettings();
+  });
+
+  blurSelectionButton.addEventListener("click", blurSelectedTextInInput);
+
+  if (setColorButton) {
+    setColorButton.addEventListener("click", applyColorToSelection);
+  }
+
+  if (chatColorInput) {
+    chatColorInput.addEventListener("input", () => {
+      const hex = normalizeHexColor(chatColorInput.value);
+      if (hex && chatColorHexInput) chatColorHexInput.value = hex;
+      if (actionColorPreset) actionColorPreset.value = "";
+    });
+  }
+
+  if (chatColorHexInput) {
+    chatColorHexInput.addEventListener("input", () => {
+      const hex = normalizeHexColor(chatColorHexInput.value);
+      if (hex && chatColorInput) chatColorInput.value = hex.toLowerCase();
+    });
+    chatColorHexInput.addEventListener("change", () => {
+      const hex = normalizeHexColor(chatColorHexInput.value);
+      if (hex) {
+        setChatColorInputs(hex);
+      } else if (chatColorInput) {
+        chatColorHexInput.value = (normalizeHexColor(chatColorInput.value) || "#D1D1D1");
+      }
+    });
+  }
+
+  if (actionColorPreset) {
+    actionColorPreset.addEventListener("change", () => {
+      if (actionColorPreset.value) {
+        setChatColorInputs(actionColorPreset.value, true);
+      } else {
+        syncColorPickerFromSelection();
+      }
+    });
+  }
+
+  input.addEventListener("select", syncColorPickerFromSelection);
+  input.addEventListener("keyup", syncColorPickerFromSelection);
+  input.addEventListener("mouseup", syncColorPickerFromSelection);
+  input.addEventListener("click", syncColorPickerFromSelection);
+
+  input.addEventListener("keydown", event => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
+      event.preventDefault();
+      blurSelectedTextInInput();
+    }
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "c") {
+      event.preventDefault();
+      applyColorToSelection();
+    }
+  });
+
+  // Layer inspector controls and actions
+  if (layerOpacityInput) {
+    const handleOpacityChange = () => {
+      const layer = getSelectedLayer();
+      if (!layer) return;
+      layer.opacity = parseFloat(layerOpacityInput.value);
+      layerOpacityValue.textContent = Math.round(layer.opacity * 100) + "%";
+      renderLayersUI();
+      updateDomLayers();
+      scheduleJpegPreview();
+    };
+    layerOpacityInput.addEventListener("input", handleOpacityChange);
+    layerOpacityInput.addEventListener("change", handleOpacityChange);
+  }
+
+  if (layerScaleInput) {
+    const handleScaleChange = () => {
+      const layer = getSelectedLayer();
+      if (!layer) return;
+      const val = parseFloat(layerScaleInput.value);
+      if (layer.type === "image") {
+        layer.scale = val;
+        layerScaleValue.textContent = Math.round(val * 100) + "%";
+        updateDomLayers();
+        scheduleJpegPreview();
+      } else if (layer.type === "background") {
+        bgScale = val;
+        layerScaleValue.textContent = Math.round(val * 100) + "%";
+        updateBackgroundTransform();
+      }
+    };
+    layerScaleInput.addEventListener("input", handleScaleChange);
+    layerScaleInput.addEventListener("change", handleScaleChange);
+  }
+
+  if (layerMoveUpBtn) {
+    layerMoveUpBtn.addEventListener("click", () => {
+      const layer = getSelectedLayer();
+      if (layer) moveLayerUp(layer.id);
+    });
+  }
+
+  if (layerMoveDownBtn) {
+    layerMoveDownBtn.addEventListener("click", () => {
+      const layer = getSelectedLayer();
+      if (layer) moveLayerDown(layer.id);
+    });
+  }
+
+  if (layerCenterBtn) {
+    layerCenterBtn.addEventListener("click", () => {
+      const layer = getSelectedLayer();
+      if (layer) centerLayer(layer.id);
+    });
+  }
+
+  if (layerDeleteBtn) {
+    layerDeleteBtn.addEventListener("click", () => {
+      const layer = getSelectedLayer();
+      if (layer) deleteLayer(layer.id);
+    });
+  }
+
+  if (addLayerImageBtn) {
+    addLayerImageBtn.addEventListener("click", () => {
+      layerImageFileInput.click();
+    });
+  }
+
+  if (layerImageFileInput) {
+    layerImageFileInput.addEventListener("change", event => {
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        Array.from(files).forEach(file => addOverlayImageLayerFromFile(file));
+        layerImageFileInput.value = "";
+      }
+    });
+  }
+
+  // Global Clipboard Paste (Ctrl+V) for screenshots and images
+  window.addEventListener("paste", event => {
+    const clipboardData = event.clipboardData;
+    if (!clipboardData) return;
+
+    let imageFile = null;
+
+    if (clipboardData.items) {
+      for (const item of clipboardData.items) {
+        if (item.type && item.type.startsWith("image/")) {
+          imageFile = item.getAsFile();
+          break;
+        }
+      }
+    }
+
+    if (!imageFile && clipboardData.files && clipboardData.files.length > 0) {
+      for (const file of clipboardData.files) {
+        if (file.type && file.type.startsWith("image/")) {
+          imageFile = file;
+          break;
+        }
+      }
+    }
+
+    if (imageFile) {
+      event.preventDefault();
+      if (!bgImageObject) {
+        loadBackgroundImageFile(imageFile);
+      } else {
+        addOverlayImageLayerFromFile(imageFile);
+      }
+    }
+  });
+
+  // Drag and drop image file onto canvas stage
+  ["dragenter", "dragover"].forEach(eventName => {
+    canvasStage.addEventListener(eventName, event => {
+      event.preventDefault();
+      event.stopPropagation();
+      canvasStage.classList.add("drag-over");
+    });
+  });
+
+  ["dragleave", "dragend"].forEach(eventName => {
+    canvasStage.addEventListener(eventName, event => {
+      event.preventDefault();
+      event.stopPropagation();
+      canvasStage.classList.remove("drag-over");
+    });
+  });
+
+  canvasStage.addEventListener("drop", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    canvasStage.classList.remove("drag-over");
+
+    const files = event.dataTransfer && event.dataTransfer.files;
+    if (files && files.length > 0) {
+      const imageFiles = Array.from(files).filter(f => f.type && f.type.startsWith("image/"));
+      if (imageFiles.length > 0) {
+        if (!bgImageObject) {
+          loadBackgroundImageFile(imageFiles[0]);
+          for (let i = 1; i < imageFiles.length; i++) {
+            addOverlayImageLayerFromFile(imageFiles[i]);
+          }
+        } else {
+          imageFiles.forEach(file => addOverlayImageLayerFromFile(file));
+        }
+      }
+    }
+  });
+
+  canvasWidthInput.addEventListener("input", () => {
+    updateCanvasStageSize();
+    saveCurrentSettingsDebounced();
+  });
+  canvasWidthInput.addEventListener("blur", normalizeCanvasWidthOnBlur);
+  canvasWidthInput.addEventListener("change", normalizeCanvasWidthOnBlur);
+  canvasHeightInput.addEventListener("input", () => {
+    updateCanvasStageSize();
+    saveCurrentSettingsDebounced();
+  });
+  canvasHeightInput.addEventListener("blur", normalizeCanvasHeightOnBlur);
+  canvasHeightInput.addEventListener("change", normalizeCanvasHeightOnBlur);
+
+  backgroundImageInput.addEventListener("change", event => {
+    const file = event.target.files && event.target.files[0];
+    if (file) {
+      loadBackgroundImageFile(file);
+    }
+  });
+
+  function applyAtmosphereFilterChange(newPreset) {
+    const targetLayer = getSelectedImageOrBackgroundLayer();
+    if (!targetLayer) return;
+
+    targetLayer.filter = newPreset;
+
+    if (atmospherePresetSelect) {
+      atmospherePresetSelect.value = newPreset;
+    }
+    if (inspectorAtmosphereSelect) {
+      inspectorAtmosphereSelect.value = newPreset;
+    }
+
+    renderLayersUI();
+    updateDomLayers();
+    scheduleJpegPreview();
+    saveCurrentSettingsDebounced();
+  }
+
+  if (atmospherePresetSelect) {
+    atmospherePresetSelect.addEventListener("change", () => {
+      applyAtmosphereFilterChange(atmospherePresetSelect.value);
+    });
+  }
+
+  if (inspectorAtmosphereSelect) {
+    inspectorAtmosphereSelect.addEventListener("change", () => {
+      applyAtmosphereFilterChange(inspectorAtmosphereSelect.value);
+    });
+  }
+
+  if (vignetteToggle) {
+    vignetteToggle.addEventListener("change", () => {
+      if (vignetteSliderContainer) {
+        vignetteSliderContainer.style.display = vignetteToggle.checked ? "flex" : "none";
+      }
+      updateAtmosphereDom();
+      scheduleJpegPreview();
+      saveCurrentSettingsDebounced();
+    });
+  }
+
+  if (vignetteStrengthInput) {
+    vignetteStrengthInput.addEventListener("input", () => {
+      if (vignetteStrengthValue) {
+        vignetteStrengthValue.textContent = `${vignetteStrengthInput.value}%`;
+      }
+      updateAtmosphereDom();
+      scheduleJpegPreview();
+      saveCurrentSettingsDebounced();
+    });
+  }
+
+  if (filmGrainToggle) {
+    filmGrainToggle.addEventListener("change", () => {
+      if (filmGrainSliderContainer) {
+        filmGrainSliderContainer.style.display = filmGrainToggle.checked ? "flex" : "none";
+      }
+      updateAtmosphereDom();
+      scheduleJpegPreview();
+      saveCurrentSettingsDebounced();
+    });
+  }
+
+  if (filmGrainStrengthInput) {
+    filmGrainStrengthInput.addEventListener("input", () => {
+      if (filmGrainStrengthValue) {
+        filmGrainStrengthValue.textContent = `${filmGrainStrengthInput.value}%`;
+      }
+      updateAtmosphereDom();
+      scheduleJpegPreview();
+      saveCurrentSettingsDebounced();
+    });
+  }
+
+  removeImageButton.addEventListener("click", () => {
+    removeBackgroundAction();
+  });
+
+  resetTextPositionButton.addEventListener("click", () => {
+    textOffsetX = DEFAULT_TEXT_OFFSET_X;
+    textOffsetY = DEFAULT_TEXT_OFFSET_Y;
+    clampTextToCanvas();
+    updateTextPosition();
+  });
+
+  input.addEventListener("input", render);
+
+  // ImgBB modal and key management
+  const imgbbModal = document.getElementById("imgbbModal");
+  const imgbbHelpButton = document.getElementById("imgbbHelpButton");
+  const closeImgbbModalBtn = document.getElementById("closeImgbbModalBtn");
+  const doneImgbbModalBtn = document.getElementById("doneImgbbModalBtn");
+  const imgbbKeyInput = document.getElementById("imgbbKeyInput");
+  const saveImgbbKeyBtn = document.getElementById("saveImgbbKeyBtn");
+  const clearImgbbKeyBtn = document.getElementById("clearImgbbKeyBtn");
+  const imgbbKeyStatus = document.getElementById("imgbbKeyStatus");
+
+  function openImgbbModal() {
+    if (!imgbbModal) return;
+    const storedKey = localStorage.getItem("imgbb_user_key") || "";
+    if (imgbbKeyInput) imgbbKeyInput.value = storedKey;
+    updateKeyStatusDisplay();
+    imgbbModal.style.display = "flex";
+  }
+
+  function closeImgbbModal() {
+    if (!imgbbModal) return;
+    imgbbModal.style.display = "none";
+  }
+
+  async function updateKeyStatusDisplay() {
+    if (!imgbbKeyStatus) return;
+    const storedKey = localStorage.getItem("imgbb_user_key") || "";
+    if (storedKey) {
+      imgbbKeyStatus.innerHTML = `<span style="color: #00d984;">✓ Key saved locally in browser (${storedKey.slice(0, 4)}...${storedKey.slice(-4)})</span>`;
+      return;
+    }
+    try {
+      const res = await fetch("/api/imgbb-status");
+      const statusData = await res.json();
+      if (statusData.hasEnvKey) {
+        imgbbKeyStatus.innerHTML = `<span style="color: #00d984;">✓ Key is configured in app environment</span>`;
+      } else {
+        imgbbKeyStatus.innerHTML = `<span style="color: #f59e0b;">⚠️ No key found. Follow the 3 steps above to add one.</span>`;
+      }
+    } catch {
+      imgbbKeyStatus.innerHTML = "";
+    }
+  }
+
+  if (imgbbHelpButton) {
+    imgbbHelpButton.addEventListener("click", openImgbbModal);
+  }
+  if (closeImgbbModalBtn) {
+    closeImgbbModalBtn.addEventListener("click", closeImgbbModal);
+  }
+  if (doneImgbbModalBtn) {
+    doneImgbbModalBtn.addEventListener("click", closeImgbbModal);
+  }
+  if (imgbbModal) {
+    imgbbModal.addEventListener("click", event => {
+      if (event.target === imgbbModal) closeImgbbModal();
+    });
+  }
+
+  if (saveImgbbKeyBtn) {
+    saveImgbbKeyBtn.addEventListener("click", () => {
+      const val = (imgbbKeyInput?.value || "").trim();
+      if (!val) {
+        localStorage.removeItem("imgbb_user_key");
+        updateKeyStatusDisplay();
+        showToast("error", "ImgBB Key Cleared", "No key entered. Key has been removed from this browser.");
+        return;
+      }
+      localStorage.setItem("imgbb_user_key", val);
+      updateKeyStatusDisplay();
+      showToast("success", "ImgBB Key Saved", "Your key is saved and ready for uploads in this browser!");
+    });
+  }
+
+  if (clearImgbbKeyBtn) {
+    clearImgbbKeyBtn.addEventListener("click", () => {
+      localStorage.removeItem("imgbb_user_key");
+      if (imgbbKeyInput) imgbbKeyInput.value = "";
+      updateKeyStatusDisplay();
+      showToast("error", "ImgBB Key Removed", "Stored key cleared from browser.");
+    });
+  }
+
+  function showToast(type, title, messageHtml, linkUrl = null, actionBtn = null) {
+    if (!toastContainer) return;
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+
+    const iconHtml = type === "success" ? "☘" : "⚠️";
+
+    let actionsHtml = "";
+    if (linkUrl) {
+      actionsHtml = `
+        <div class="toast-actions">
+          <button type="button" class="toast-copy-btn" data-url="${linkUrl}">Copy Link</button>
+        </div>
+      `;
+    } else if (actionBtn) {
+      actionsHtml = `
+        <div class="toast-actions">
+          <button type="button" class="toast-copy-btn toast-action-custom-btn">${actionBtn.text}</button>
+        </div>
+      `;
+    }
+
+    toast.innerHTML = `
+      <div class="toast-icon">${iconHtml}</div>
+      <div class="toast-body">
+        <div class="toast-title">${title}</div>
+        <div class="toast-message">${messageHtml}</div>
+        ${actionsHtml}
+      </div>
+      <button type="button" class="toast-close" title="Close notification">&times;</button>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    const closeBtn = toast.querySelector(".toast-close");
+    const removeToast = () => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(12px) scale(0.96)";
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 220);
+    };
+
+    if (closeBtn) {
+      closeBtn.addEventListener("click", removeToast);
+    }
+
+    const copyBtn = toast.querySelector(".toast-copy-btn[data-url]");
+    if (copyBtn) {
+      copyBtn.addEventListener("click", async () => {
+        const urlToCopy = copyBtn.getAttribute("data-url");
+        if (urlToCopy) {
+          await copyTextToClipboard(urlToCopy);
+          copyBtn.textContent = "Copied!";
+          setTimeout(() => {
+            copyBtn.textContent = "Copy Link";
+          }, 1200);
+        }
+      });
+    }
+
+    const customActionBtn = toast.querySelector(".toast-action-custom-btn");
+    if (customActionBtn && actionBtn && actionBtn.onClick) {
+      customActionBtn.addEventListener("click", () => {
+        actionBtn.onClick();
+        removeToast();
+      });
+    }
+
+    setTimeout(removeToast, 8000);
+  }
+
+  async function copyTextToClipboard(text) {
+    let copied = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch (e) {
+        console.warn("navigator.clipboard.writeText failed:", e);
+      }
+    }
+    if (!copied) {
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        copied = true;
+      } catch (err) {
+        console.error("document.execCommand fallback failed:", err);
+      }
+    }
+    return copied;
+  }
+
+  if (uploadImgbbButton) {
+    uploadImgbbButton.addEventListener("click", async () => {
+      const originalHtml = uploadImgbbButton.innerHTML;
+      uploadImgbbButton.disabled = true;
+      uploadImgbbButton.innerHTML = `
+        <svg class="spin-anim" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-linecap="round"></circle></svg>
+        <span>Uploading to ImgBB...</span>
+      `;
+
+      try {
+        // 1. Resolve API key (localStorage first, then server environment config)
+        let keyToUse = (localStorage.getItem("imgbb_user_key") || "").trim();
+        if (!keyToUse) {
+          try {
+            const keyRes = await fetch("/api/imgbb-key");
+            const keyData = await keyRes.json();
+            if (keyData?.apiKey) {
+              keyToUse = keyData.apiKey.trim();
+            }
+          } catch (e) {
+            console.warn("Could not check server for environment key:", e);
+          }
+        }
+
+        // If still no key, guide user to enter one
+        if (!keyToUse) {
+          openImgbbModal();
+          showToast(
+            "error",
+            "ImgBB API Key Required",
+            "An API key is required to upload directly to ImgBB. Create a free account at <strong>imgbb.com</strong>, navigate to <strong>api.imgbb.com</strong>, and enter your key.",
+            null,
+            { text: "Open Setup Guide", onClick: openImgbbModal }
+          );
+          uploadImgbbButton.innerHTML = originalHtml;
+          uploadImgbbButton.disabled = false;
+          return;
+        }
+
+        // 2. Render canvas and get binary Blob (avoids reverse-proxy payload limits)
+        const canvas = await getExportCanvas();
+        const blob = await new Promise((resolve, reject) => {
+          canvas.toBlob(b => {
+            if (b) resolve(b);
+            else reject(new Error("Failed to generate image from canvas."));
+          }, "image/png");
+        });
+
+        // 3. Upload directly to ImgBB from browser (ImgBB allows CORS & accepts user residential IP)
+        const fd = new FormData();
+        fd.append("image", blob, "chatlog.png");
+        fd.append("name", "gta-rp-chatlog");
+
+        const directRes = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(keyToUse)}`, {
+          method: "POST",
+          body: fd
+        });
+
+        const rawText = await directRes.text();
+        let directData = null;
+        try {
+          directData = JSON.parse(rawText);
+        } catch {
+          throw new Error("ImgBB service returned an unexpected response. Please verify your connection.");
+        }
+
+        if (!directRes.ok || !directData || !directData.success) {
+          const errMsg = directData?.error?.message || `ImgBB upload failed (Status ${directRes.status})`;
+          if (directData?.error?.code === 100 || errMsg.toLowerCase().includes("api key") || errMsg.toLowerCase().includes("invalid")) {
+            openImgbbModal();
+            throw new Error(`ImgBB rejected the key: ${errMsg}. Please verify your key at api.imgbb.com.`);
+          }
+          throw new Error(errMsg);
+        }
+
+        const uploadedUrl = directData.data.url || directData.data.display_url || directData.data.url_viewer;
+        await copyTextToClipboard(uploadedUrl);
+
+        uploadImgbbButton.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Link Copied! (Ctrl+V)</span>
+        `;
+
+        showToast(
+          "success",
+          "Uploaded to ImgBB & Copied!",
+          `Image uploaded successfully! Direct link copied to clipboard for Ctrl+V: <a href="${uploadedUrl}" target="_blank" rel="noopener noreferrer" class="toast-link">${uploadedUrl}</a>`,
+          uploadedUrl
+        );
+
+        setTimeout(() => {
+          uploadImgbbButton.innerHTML = originalHtml;
+          uploadImgbbButton.disabled = false;
+        }, 3200);
+      } catch (err) {
+        console.error("ImgBB upload error:", err);
+        showToast("error", "ImgBB Upload Error", err.message || "Failed to complete upload.");
+        uploadImgbbButton.innerHTML = `<span>Upload Failed</span>`;
+        setTimeout(() => {
+          uploadImgbbButton.innerHTML = originalHtml;
+          uploadImgbbButton.disabled = false;
+        }, 2200);
+      }
+    });
+  }
+
+  copyPngButton.addEventListener("click", async () => {
+    try {
+      await copyCanvasAsPng();
+      copyPngButton.textContent = "PNG Copied!";
+      setTimeout(() => {
+        copyPngButton.textContent = "Copy PNG";
+      }, 1200);
+    } catch (error) {
+      copyPngButton.textContent = "Copy failed";
+      showToast("error", "Clipboard Copy Failed", error?.message || "Direct image clipboard access was blocked. Use 'Download PNG' or 'Upload to ImgBB' instead.");
+      setTimeout(() => {
+        copyPngButton.textContent = "Copy PNG";
+      }, 1400);
+      console.error(error);
+    }
+  });
+
+  downloadPngButton.addEventListener("click", () => {
+    downloadCanvasAsPng();
+  });
+
+  downloadJpegButton.addEventListener("click", () => {
+    downloadCanvasAsJpeg();
+  });
+
+  clearButton.addEventListener("click", () => {
+    input.value = "";
+    render();
+  });
+
+  if (resetSettingsButton) {
+    resetSettingsButton.addEventListener("click", resetSettingsToDefault);
+  }
+
+  loadAndApplySavedSettings();
+
+  const initialFontSize = Number(fontSize.value) || 14;
+  document.documentElement.style.setProperty("--chat-font-size", initialFontSize + "px");
+  document.documentElement.style.setProperty("--chat-text-padding", getTextPadding() + "px");
+  updateTextPanelWidth();
+  preview.classList.toggle("no-text-background", !backgroundToggle.checked);
+  updateCanvasStageSize();
+  updateBackgroundTransform();
+  updateTextPosition();
+  updateFontFamily();
+  updateOutlineSettings();
+  updateCensorSettings();
+  render();
+  renderLayersUI();
+  updateDomLayers();
+  syncColorPickerFromSelection();
+
+  // Tip Rotation Carousel
+  const siteTips = [
+    "Atmosphere & Cinematic Filters: Try the <strong>Mood presets</strong> (Warm Sunset, Noir / B&W, High Contrast, Cold Night) along with <strong>Vignette</strong> and <strong>Film Grain</strong> in the top toolbar to give your RP screenshot cinematic immersion.",
+    "Your customized canvas dimensions, fonts, outline styles, and censorship settings are automatically saved and remembered across visits.",
+    "Add images on top of the canvas via the Layers box or <strong>+ Add Image Layer</strong>. Drag on the canvas to move any layer, or use the mouse wheel to scale.",
+    "Highlight any text and press <strong>Ctrl+B</strong> (or click <strong>Blur Selection ☘</strong>) to censor sensitive names, radio channels, or locations.",
+    "Paste logs with <strong>!{#HEX}</strong> color codes. Timestamps are hidden in the preview. Select text and use <strong>Set Color</strong> (Ctrl+Shift+C) — the picker follows the current action color.",
+    "Switch censor modes in top controls: choose between smooth <strong>Gaussian Blur</strong>, retro <strong>Mosaic Blur</strong>, or <strong>Redacted Black Bar</strong>.",
+    "Press <strong>Ctrl+V</strong> anywhere to instantly paste screenshots or copied images directly onto the canvas as new layers.",
+    "Drag and drop image files directly from your computer onto the canvas stage to add them as background or overlay graphics.",
+    "Reorder layer depth with the <strong>▲</strong> and <strong>▼</strong> buttons in the Layers pane, toggle visibility with the eye icon, and adjust layer opacity.",
+    "Click and drag the chatlog text anywhere on the canvas to reposition it freely. Click <strong>Reset Text Position</strong> to restore default placement.",
+    "Custom canvas sizing: Type any width and height into <strong>Canvas width / height</strong> to match 1080p, 1440p, 4K, or custom screenshot aspect ratios.",
+    "Fine-tune the chat aesthetic with <strong>Outline style</strong> (Classic outline, Drop shadow, Both, or None) and adjust outline stroke thickness.",
+    "Click <strong>Copy PNG</strong> to copy the rendered screenshot directly to your clipboard for instant pasting into Discord, forums, or editors.",
+    "Click <strong>Upload to ImgBB</strong> to upload your chatlog directly to ImgBB and automatically copy the link to your clipboard (Ctrl+V)."
+  ];
+
+  let currentTipIndex = 0;
+  let tipTimer = null;
+  const tipTextEl = document.getElementById("tipText");
+  const tipPrevBtn = document.getElementById("tipPrevBtn");
+  const tipNextBtn = document.getElementById("tipNextBtn");
+  const footerNoteEl = document.getElementById("footerNote");
+
+  function showTip(index, immediate = false) {
+    if (!tipTextEl) return;
+    currentTipIndex = (index + siteTips.length) % siteTips.length;
+
+    if (immediate) {
+      tipTextEl.innerHTML = siteTips[currentTipIndex];
+      tipTextEl.classList.remove("fading");
+      return;
+    }
+
+    tipTextEl.classList.add("fading");
+    setTimeout(() => {
+      tipTextEl.innerHTML = siteTips[currentTipIndex];
+      tipTextEl.classList.remove("fading");
+    }, 350);
+  }
+
+  function startTipRotation() {
+    stopTipRotation();
+    tipTimer = setInterval(() => {
+      showTip(currentTipIndex + 1);
+    }, 13000);
+  }
+
+  function stopTipRotation() {
+    if (tipTimer) {
+      clearInterval(tipTimer);
+      tipTimer = null;
+    }
+  }
+
+  if (tipNextBtn) {
+    tipNextBtn.addEventListener("click", () => {
+      showTip(currentTipIndex + 1);
+      startTipRotation();
+    });
+  }
+
+  if (tipPrevBtn) {
+    tipPrevBtn.addEventListener("click", () => {
+      showTip(currentTipIndex - 1);
+      startTipRotation();
+    });
+  }
+
+  if (footerNoteEl) {
+    footerNoteEl.addEventListener("mouseenter", stopTipRotation);
+    footerNoteEl.addEventListener("mouseleave", startTipRotation);
+  }
+
+  showTip(0, true);
+  startTipRotation();
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      render();
+    });
+  }
+</script>
+</body>
+</html>
