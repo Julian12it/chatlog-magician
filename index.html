@@ -7,13 +7,10 @@
 <meta name="description" content="GTA roleplay chatlog magician and preview tool with multi-layer canvas support, atmosphere and cinematic filters (warm sunset, noir, contrast, vignette, film grain), server-accurate fonts, stroke & shadow styles, censor blur and redaction, clipboard image pasting, drag-and-drop screenshots, canvas export, and direct ImgBB image uploading with automatic link copying." />
 <meta property="og:title" content="GTA RP Chatlog Magician" />
 <meta property="og:description" content="GTA roleplay chatlog magician and preview tool with multi-layer canvas support, atmosphere and cinematic filters (warm sunset, noir, contrast, vignette, film grain), server-accurate fonts, stroke & shadow styles, censor blur and redaction, clipboard image pasting, drag-and-drop screenshots, canvas export, and direct ImgBB image uploading with automatic link copying." />
-<link rel="icon" type="image/svg+xml" href="clover.svg" />
-<link rel="icon" type="image/png" sizes="64x64" href="clover.png" />
-<link rel="shortcut icon" href="clover.png" />
-<link rel="apple-touch-icon" href="clover.png" />
+<link rel="icon" type="image/svg+xml" href="icon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --page-bg: #181818;
@@ -22,7 +19,7 @@
     --border: #3a3a3a;
     --text: #e8e8e8;
     --muted: #a8a8a8;
-    --accent: #009E60;
+    --accent: #fafafa;
     --accent-hover: #00b36d;
     --accent-dark: #004d2e;
     --accent-dark-hover: #00663d;
@@ -889,7 +886,7 @@
   }
 
   .layer-item.active .layer-name {
-    color: #86efac;
+    color: #fafafa;
   }
 
   .layer-meta {
@@ -1505,249 +1502,386 @@
       justify-content: flex-start;
     }
   }
+
+  /* shadcn zinc restyle */
+  :root {
+    --page-bg: #09090b;
+    --panel-bg: #09090b;
+    --panel-bg-soft: #18181b;
+    --border: #27272a;
+    --text: #fafafa;
+    --muted: #a1a1aa;
+    --accent: #fafafa;
+    --accent-hover: #e4e4e7;
+    --accent-dark: #fafafa;
+    --accent-dark-hover: #e4e4e7;
+    --accent-border: #3f3f46;
+    --accent-bg: rgba(250, 250, 250, 0.08);
+    --accent-glow: rgba(250, 250, 250, 0.12);
+    --accent-foreground: #18181b;
+    --radius: 6px;
+  }
+
+  body {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    background: var(--page-bg);
+    color: var(--text);
+  }
+
+  header {
+    height: 52px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--page-bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: nowrap;
+  }
+
+  header h1 {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  .topbar-center,
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .topbar-kicker {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  button {
+    font-weight: 500;
+    border-radius: var(--radius);
+  }
+
+  .btn {
+    height: 32px;
+    padding: 6px 11px;
+  }
+
+  .btn-xs { height: 26px; }
+  .btn-sm { height: 28px; }
+
+  .btn-neutral {
+    background: #18181b;
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .btn-neutral:hover {
+    background: #27272a;
+    border-color: #3f3f46;
+  }
+
+  .btn-accent,
+  .btn-export {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+  .btn-accent:hover,
+  .btn-export:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--accent-foreground);
+    filter: none;
+  }
+
+  .btn-danger {
+    background: transparent;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+  }
+  .btn-danger:hover {
+    background: #450a0a;
+    border-color: #991b1b;
+    color: #fecaca;
+  }
+
+  .btn-imgbb {
+    background: #18181b;
+    border-color: var(--border);
+    color: var(--text);
+    font-weight: 500;
+  }
+  .btn-imgbb:hover:not(:disabled) {
+    background: #27272a;
+    border-color: #3f3f46;
+    filter: none;
+  }
+
+  .btn-icon-help {
+    background: #18181b;
+    border-color: var(--border);
+    color: var(--muted);
+    height: 32px;
+  }
+
+  .control select,
+  .font-size-input,
+  .canvas-size-input,
+  .text-panel-width-input,
+  .text-padding-input,
+  .stroke-width-input,
+  .chat-color-hex,
+  .action-color-select,
+  .modal-input {
+    background: #18181b;
+    border-color: var(--border);
+    color: var(--text);
+    font-weight: 500;
+    border-radius: var(--radius);
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 400px);
+    min-height: 0;
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    border-left: 1px solid var(--border);
+    background: var(--page-bg);
+  }
+
+  .side-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .side-section-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .side-section-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .side-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pane-preview {
+    background: #0c0c0e;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .pane-title {
+    height: 40px;
+    background: transparent;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    padding: 0 16px;
+  }
+
+  .pane-input { overflow: visible; min-height: 0; height: auto; flex: 0 0 auto; }
+
+  .sidebar .side-section {
+    flex: 0 0 auto;
+  }
+
+  .sidebar textarea {
+    flex: none;
+    height: 170px;
+  }
+  .pane-layers {
+    background: transparent;
+    min-height: 260px;
+    flex: none;
+    height: auto;
+  }
+
+  .layers-toolbar {
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+
+  .layers-list-container {
+    min-height: 140px;
+    max-height: 240px;
+    padding: 0;
+  }
+
+  .layer-item {
+    background: #18181b;
+    border-color: var(--border);
+    padding: 8px 10px;
+  }
+  .layer-item.active {
+    background: #27272a;
+    border-color: #52525b;
+    box-shadow: none;
+  }
+
+  .layer-badge {
+    color: var(--muted);
+    background: #18181b;
+    border-color: var(--border);
+    font-weight: 500;
+  }
+
+  .layer-inspector {
+    background: transparent;
+    padding: 10px 0 0;
+  }
+
+  .layer-thumb-icon { color: var(--muted); font-weight: 600; }
+
+  textarea {
+    min-height: 170px;
+    height: 170px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #18181b;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .preview-fit-toggle {
+    color: var(--accent-foreground);
+    background: var(--accent);
+    border-color: var(--accent);
+    font-weight: 500;
+    height: auto;
+  }
+
+  .preview-scale-badge {
+    color: var(--muted);
+    background: #18181b;
+    border-color: var(--border);
+    font-weight: 500;
+  }
+
+  .preview-outer { padding: 16px; }
+
+  .selection-box-overlay {
+    border: 1px dashed rgba(250, 250, 250, 0.55);
+  }
+
+  .footer-note {
+    background: transparent;
+    min-height: 36px;
+    padding: 8px 16px;
+  }
+
+  .tip-label {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 0;
+  }
+
+  .toast {
+    background: #18181b;
+    border-color: var(--border);
+  }
+  .toast.toast-success {
+    background: #18181b;
+    border-color: #3f3f46;
+  }
+  .toast-link { color: #e4e4e7; }
+
+  .modal-dialog, .modal-header { background: #09090b; border-color: var(--border); }
+  .modal-step { background: #18181b; border-color: var(--border); }
+  .modal-step-number { background: #27272a; color: var(--text); }
+  .modal-step-desc a { color: #e4e4e7; }
+  .modal-tip-box {
+    background: #18181b;
+    border-color: var(--border);
+    color: var(--muted);
+  }
+
+  #inspectorAtmosphereSelect {
+    flex: 1;
+    padding: 3px 6px;
+    font-size: 11.5px;
+    background: #18181b;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: #fff;
+  }
+
+  @media (max-width: 1024px) {
+    .workspace {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(280px, 1.2fr) minmax(280px, 1fr);
+    }
+    .sidebar {
+      border-left: none;
+      border-top: 1px solid var(--border);
+    }
+    .pane-preview { order: -1; }
+    header {
+      height: auto;
+      min-height: 52px;
+      flex-wrap: wrap;
+      padding: 8px 12px;
+    }
+  }
+
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div>
-      <h1><img src="clover.svg" alt="☘" class="header-icon" /> GTA RP Chatlog Magician</h1>
-      <span>Paste a GTA-style chatlog and preview it with in-game-like colors.</span>
+    <h1>Chatlog Magician</h1>
+    <div class="topbar-center">
+      <span class="topbar-kicker">Canvas</span>
+      <input id="canvasWidthInput" class="canvas-size-input" type="number" min="100" max="4000" value="600" title="Canvas width (px)" />
+      <span class="dim-separator">×</span>
+      <input id="canvasHeightInput" class="canvas-size-input" type="number" min="100" max="4000" value="600" title="Canvas height (px)" />
+      <button type="button" id="previewFitToggle" class="preview-fit-toggle" title="Fit the canvas in view, or show actual size">Fit</button>
+    </div>
+    <div class="topbar-actions">
+      <button id="copyPngButton" class="btn btn-neutral">Copy PNG</button>
+      <button id="downloadPngButton" class="btn btn-export">Save PNG</button>
     </div>
   </header>
 
-  <div class="toolbar">
-    <div class="toolbar-group">
-      <span class="toolbar-group-label">Typography</span>
-      <label class="control" title="Font family">
-        Font:
-        <select id="fontFamilySelect">
-          <option value="Arial, Helvetica, sans-serif" selected>Arial </option>
-          <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
-          <option value="Verdana, Geneva, sans-serif">Verdana</option>
-          <option value="'Roboto', sans-serif">Roboto</option>
-          <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-          <option value="Georgia, serif">Georgia</option>
-          <option value="Impact, Charcoal, sans-serif">Impact</option>
-        </select>
-      </label>
-
-      <div class="toolbar-divider"></div>
-
-      <label class="control" title="Font size in pixels">
-        Size:
-        <input id="fontSize" class="font-size-input" type="number" min="8" max="72" value="14" />
-        <span>px</span>
-      </label>
-
-      <div class="toolbar-divider"></div>
-
-      <label class="control" title="Wrap width (in pixels) — cannot exceed the canvas width, so chatlog text stays inside the preview">
-        Wrap width:
-        <input id="textPanelWidthInput" class="text-panel-width-input" type="number" min="50" max="600" value="500" />
-        <span>px</span>
-      </label>
-
-      <div class="toolbar-divider"></div>
-
-      <label class="control" title="Spacing around the chatlog text box, in pixels">
-        Padding:
-        <input id="textPaddingInput" class="text-padding-input" type="number" min="0" max="80" step="1" value="8" />
-        <span>px</span>
-      </label>
-    </div>
-
-    <div class="toolbar-group">
-      <span class="toolbar-group-label">Outline & BG</span>
-      <label class="control" title="Outline / shadow styling">
-        Outline:
-        <select id="outlineStyleSelect">
-          <option value="stroke" selected>Outline </option>
-          <option value="shadow">Drop Shadow (GTA V / FiveM)</option>
-          <option value="both">Outline & Shadow</option>
-          <option value="none">None</option>
-        </select>
-      </label>
-
-      <label class="control" id="strokeWidthControl" title="Outline stroke thickness in pixels">
-        <div class="toolbar-divider"></div>
-        Thickness:
-        <input id="strokeWidthInput" class="stroke-width-input" type="number" min="0.5" max="6" step="0.5" value="1.5" />
-        <span>px</span>
-      </label>
-
-      <div class="toolbar-divider"></div>
-
-      <label class="control" title="Toggle dark background behind chat text">
-        <input id="backgroundToggle" type="checkbox" checked />
-        Dark text background
-      </label>
-    </div>
-
-    <div class="toolbar-group">
-      <span class="toolbar-group-label">Censorship</span>
-      <label class="control" title="Censorship effect for ☘blurred☘ text">
-        Style:
-        <select id="censorStyleSelect">
-          <option value="blur" selected>Gaussian Blur</option>
-          <option value="mosaic">Mosaic Blur</option>
-          <option value="redact">Redacted Black Bar</option>
-        </select>
-      </label>
-
-      <label class="control" id="blurStrengthControl" title="Blur intensity or mosaic block size">
-        <div class="toolbar-divider"></div>
-        <span id="blurStrengthLabel">Blur strength:</span>
-        <input id="blurStrengthInput" type="range" min="1" max="10" step="1" value="3" style="width: 75px;" />
-        <span id="blurStrengthValue">3px</span>
-      </label>
-    </div>
-
-    <div class="toolbar-group" id="atmosphereToolbarGroup">
-      <span class="toolbar-group-label">Atmosphere</span>
-      <label class="control" title="Cinematic color filter for the selected image layer">
-        Filter:
-        <select id="atmospherePresetSelect">
-          <option value="none" selected>Original</option>
-          <option value="sunset">🌅 Warm Sunset</option>
-          <option value="noir">🎬 Noir / B&amp;W</option>
-          <option value="contrast">⚡ High Contrast</option>
-          <option value="invert">🔄 Inverse</option>
-        </select>
-      </label>
-      <div id="filterIntensitySliderContainer" class="control" style="display: none; align-items: center; gap: 4px;" title="Fine-tune filter intensity">
-        <input id="filterIntensityInput" type="range" min="0" max="100" step="5" value="100" style="width: 55px;" title="Filter intensity" />
-        <span id="filterIntensityValue" style="font-size: 11px; color: var(--muted); min-width: 28px;">100%</span>
-      </div>
-
-      <div class="toolbar-divider"></div>
-
-      <label class="control" title="Toggle dark edge vignette to frame the scene">
-        <input id="vignetteToggle" type="checkbox" />
-        Vignette
-      </label>
-      <div id="vignetteSliderContainer" class="control" style="display: none; align-items: center; gap: 4px;">
-        <input id="vignetteStrengthInput" type="range" min="10" max="100" step="5" value="45" style="width: 55px;" title="Vignette darkness" />
-        <span id="vignetteStrengthValue" style="font-size: 11px; color: var(--muted); min-width: 26px;">45%</span>
-      </div>
-
-      <div class="toolbar-divider"></div>
-
-      <label class="control" title="Toggle 35mm photographic film grain">
-        <input id="filmGrainToggle" type="checkbox" />
-        Film Grain
-      </label>
-      <div id="filmGrainSliderContainer" class="control" style="display: none; align-items: center; gap: 4px;">
-        <input id="filmGrainStrengthInput" type="range" min="5" max="75" step="5" value="25" style="width: 50px;" title="Film grain intensity" />
-        <span id="filmGrainStrengthValue" style="font-size: 11px; color: var(--muted); min-width: 24px;">25%</span>
-      </div>
-    </div>
-
-    <div class="toolbar-group">
-      <span class="toolbar-group-label">Canvas & Frame</span>
-      <div class="control" title="Canvas dimensions in pixels (Width × Height)">
-        <span>Canvas:</span>
-        <input id="canvasWidthInput" class="canvas-size-input" type="number" min="100" max="4000" value="600" title="Canvas Width (px)" />
-        <span class="dim-separator">×</span>
-        <input id="canvasHeightInput" class="canvas-size-input" type="number" min="100" max="4000" value="600" title="Canvas Height (px)" />
-        <span>px</span>
-      </div>
-
-      <div class="toolbar-divider"></div>
-
-      <label class="control" title="Upload background screenshot">
-        <span>BG Canvas:</span>
-        <input id="backgroundImageInput" type="file" accept="image/*" />
-      </label>
-
-      <div class="toolbar-divider"></div>
-
-      <label class="control" title="JPEG export quality">
-        <span>JPEG Quality:</span>
-        <input id="jpegQualityInput" type="range" min="0.05" max="1" step="0.01" value="1" style="width: 75px;" />
-        <span id="jpegQualityValue">100%</span>
-      </label>
-    </div>
-
-    <div class="toolbar-group">
-      <span class="toolbar-group-label">Settings</span>
-      <button id="resetSettingsButton" type="button" class="btn btn-neutral btn-sm" title="Reset all settings to default values">
-        ↺ Reset Settings
-      </button>
-    </div>
-  </div>
-
   <main class="workspace">
-    <div class="workspace-side">
-    <section class="pane pane-input">
-      <div class="pane-title">Input</div>
-      <textarea id="input" spellcheck="false" placeholder="Paste a GTA RP chatlog here. Timestamps are hidden. Color codes like !{#D1D1D1} are supported.">[18:42:03] !{#D1D1D1}Carl Johnson says: We hitting Grove in ten.
-[18:42:11] !{#FF00C3}[!] !{#D8D8D8}Big Smoke says (to Carl Johnson): Bring the extra clip. Don't be late.
-[18:42:19] !{#F0F0F0}Carl Johnson says (to Big Smoke): Already in the car. Let's roll.
-[18:42:27] !{#C2A2DA}* Carl Johnson taps the steering wheel and checks the rearview.
-[18:42:34] !{#D4D4D4}Sweet Johnson says: Keep it quiet. In and out.
-[18:42:41] !{#D1D1D1}Carl Johnson says: Copy that.</textarea>
-    </section>
-
-    <section class="pane pane-layers" id="layersPane">
-      <div class="pane-title pane-title-flex">
-        <span>Layers</span>
-        <span id="layersCountBadge" class="layer-badge">2 Layers</span>
-      </div>
-
-      <div class="layers-toolbar">
-        <button id="addLayerImageBtn" class="btn btn-accent btn-sm" title="Add an image layer on top of the canvas">
-          + Add Image Layer
-        </button>
-        <input type="file" id="layerImageFileInput" accept="image/*" multiple style="display: none;" />
-      </div>
-
-      <div class="layers-list-container" id="layersListContainer">
-        <div id="layersList" class="layers-list"></div>
-      </div>
-
-      <div class="layer-inspector" id="layerInspector">
-        <div class="inspector-header">
-          <span class="inspector-title" id="inspectorLayerName">Selected Layer</span>
-          <span id="inspectorLayerType" class="inspector-type-badge">Text</span>
-        </div>
-        <div class="inspector-row">
-          <span class="inspector-label">Opacity:</span>
-          <input type="range" id="layerOpacityInput" min="0" max="1" step="0.01" value="1" class="inspector-slider" />
-          <span id="layerOpacityValue" class="inspector-val">100%</span>
-        </div>
-        <div class="inspector-row" id="layerScaleRow">
-          <span class="inspector-label">Scale:</span>
-          <input type="range" id="layerScaleInput" min="0.05" max="3" step="0.01" value="1" class="inspector-slider" />
-          <span id="layerScaleValue" class="inspector-val">100%</span>
-        </div>
-        <div class="inspector-row" id="bgAtmosphereRow" style="display: none;">
-          <span class="inspector-label">Filter:</span>
-          <select id="inspectorAtmosphereSelect" style="flex: 1; padding: 3px 6px; font-size: 11.5px; background: #222; border: 1px solid #3d3d3d; border-radius: 4px; color: #fff;">
-            <option value="none">Original</option>
-            <option value="sunset">🌅 Warm Sunset</option>
-            <option value="noir">🎬 Noir / B&amp;W</option>
-            <option value="contrast">⚡ High Contrast</option>
-            <option value="invert">🔄 Inverse</option>
-          </select>
-        </div>
-        <div class="inspector-actions">
-          <button id="layerMoveUpBtn" class="btn btn-neutral btn-xs" title="Move layer forward (up)">▲ Forward</button>
-          <button id="layerMoveDownBtn" class="btn btn-neutral btn-xs" title="Move layer backward (down)">▼ Backward</button>
-          <button id="layerCenterBtn" class="btn btn-neutral btn-xs" title="Center layer on canvas">Center</button>
-          <button id="layerDeleteBtn" class="btn btn-danger btn-xs" title="Delete selected layer">Delete</button>
-        </div>
-      </div>
-    </section>
-    </div>
-
     <section class="pane pane-preview">
       <div class="pane-title pane-title-flex">
         <span>Preview</span>
-        <div class="preview-title-meta">
-          <button type="button" id="previewFitToggle" class="preview-fit-toggle" title="Fit the canvas in view, or show actual size">Fit</button>
-          <span id="previewScaleBadge" class="preview-scale-badge">600 × 600</span>
-        </div>
+        <span id="previewScaleBadge" class="preview-scale-badge">600 × 600</span>
       </div>
       <div id="previewOuter" class="preview-outer">
         <div id="canvasFitSlot" class="canvas-fit-slot">
@@ -1766,65 +1900,234 @@
           </div>
         </div>
       </div>
+      <div class="footer-note" id="footerNote">
+        <span class="tip-label">Tip</span>
+        <div class="tip-carousel">
+          <span id="tipText" class="tip-text">Add images via Layers. Drag to move a layer, or use the mouse wheel to scale image layers.</span>
+        </div>
+        <div class="tip-controls">
+          <button type="button" id="tipPrevBtn" class="tip-nav-btn" title="Previous tip">◀</button>
+          <button type="button" id="tipNextBtn" class="tip-nav-btn" title="Next tip">▶</button>
+        </div>
+      </div>
     </section>
+
+    <aside class="sidebar">
+      <section class="side-section pane-input">
+        <div class="side-section-title">Chat log</div>
+        <textarea id="input" spellcheck="false" placeholder="Paste a GTA RP chatlog here. Timestamps are hidden. Color codes like !{#D1D1D1} are supported.">[18:42:03] !{#D1D1D1}Carl Johnson says: We hitting Grove in ten.
+[18:42:11] !{#FF00C3}[!] !{#D8D8D8}Big Smoke says (to Carl Johnson): Bring the extra clip. Don't be late.
+[18:42:19] !{#F0F0F0}Carl Johnson says (to Big Smoke): Already in the car. Let's roll.
+[18:42:27] !{#C2A2DA}* Carl Johnson taps the steering wheel and checks the rearview.
+[18:42:34] !{#D4D4D4}Sweet Johnson says: Keep it quiet. In and out.
+[18:42:41] !{#D1D1D1}Carl Johnson says: Copy that.</textarea>
+        <div class="side-row color-control" title="Select text, then set its color.">
+          <input id="chatColorInput" class="chat-color-swatch" type="color" value="#d1d1d1" title="Pick a chat color" />
+          <input id="chatColorHexInput" class="chat-color-hex" type="text" value="#D1D1D1" maxlength="7" spellcheck="false" title="Hex color" />
+          <select id="actionColorPreset" class="action-color-select" title="Apply a standard action color">
+            <option value="">From selection</option>
+            <option value="#D1D1D1">Say</option>
+            <option value="#F0F0F0">Say (bright)</option>
+            <option value="#D8D8D8">Say (dim)</option>
+            <option value="#D4D4D4">Say (soft)</option>
+            <option value="#C2A2DA">Action /me</option>
+            <option value="#FF00C3">Alert [!]</option>
+          </select>
+        </div>
+        <div class="side-row">
+          <button id="setColorButton" class="btn btn-neutral" type="button" title="Apply color to selected text (Ctrl+Shift+C)">Set Color</button>
+          <button id="blurSelectionButton" class="btn btn-neutral" title="Wrap selection to censor it (Ctrl+B)">Blur Selection</button>
+          <button id="clearButton" class="btn btn-danger">Clear</button>
+        </div>
+      </section>
+
+      <section class="side-section pane pane-layers" id="layersPane">
+        <div class="side-section-title side-section-title-row">
+          <span>Layers</span>
+          <span id="layersCountBadge" class="layer-badge">2 Layers</span>
+        </div>
+        <div class="layers-toolbar">
+          <button id="addLayerImageBtn" class="btn btn-neutral btn-sm" title="Add an image layer on top of the canvas">+ Add Image Layer</button>
+          <input type="file" id="layerImageFileInput" accept="image/*" multiple style="display: none;" />
+        </div>
+        <div class="layers-list-container" id="layersListContainer">
+          <div id="layersList" class="layers-list"></div>
+        </div>
+        <div class="layer-inspector" id="layerInspector">
+          <div class="inspector-header">
+            <span class="inspector-title" id="inspectorLayerName">Selected Layer</span>
+            <span id="inspectorLayerType" class="inspector-type-badge">Text</span>
+          </div>
+          <div class="inspector-row">
+            <span class="inspector-label">Opacity</span>
+            <input type="range" id="layerOpacityInput" min="0" max="1" step="0.01" value="1" class="inspector-slider" />
+            <span id="layerOpacityValue" class="inspector-val">100%</span>
+          </div>
+          <div class="inspector-row" id="layerScaleRow">
+            <span class="inspector-label">Scale</span>
+            <input type="range" id="layerScaleInput" min="0.05" max="3" step="0.01" value="1" class="inspector-slider" />
+            <span id="layerScaleValue" class="inspector-val">100%</span>
+          </div>
+          <div class="inspector-row" id="bgAtmosphereRow" style="display: none;">
+            <span class="inspector-label">Filter</span>
+            <select id="inspectorAtmosphereSelect">
+              <option value="none">Original</option>
+              <option value="sunset">Warm Sunset</option>
+              <option value="noir">Noir / B&amp;W</option>
+              <option value="contrast">High Contrast</option>
+              <option value="invert">Inverse</option>
+            </select>
+          </div>
+          <div class="inspector-actions">
+            <button id="layerMoveUpBtn" class="btn btn-neutral btn-xs" title="Move layer forward">Forward</button>
+            <button id="layerMoveDownBtn" class="btn btn-neutral btn-xs" title="Move layer backward">Back</button>
+            <button id="layerCenterBtn" class="btn btn-neutral btn-xs" title="Center layer on canvas">Center</button>
+            <button id="layerDeleteBtn" class="btn btn-danger btn-xs" title="Delete selected layer">Delete</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="side-section">
+        <div class="side-section-title">Style</div>
+        <label class="control" title="Font family">
+          Font
+          <select id="fontFamilySelect">
+            <option value="Arial, Helvetica, sans-serif" selected>Arial</option>
+            <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+            <option value="Verdana, Geneva, sans-serif">Verdana</option>
+            <option value="'Roboto', sans-serif">Roboto</option>
+            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="Impact, Charcoal, sans-serif">Impact</option>
+          </select>
+        </label>
+        <div class="side-row">
+          <label class="control" title="Font size in pixels">
+            Size
+            <input id="fontSize" class="font-size-input" type="number" min="8" max="72" value="14" />
+            <span>px</span>
+          </label>
+          <label class="control" title="Wrap width in pixels">
+            Wrap
+            <input id="textPanelWidthInput" class="text-panel-width-input" type="number" min="50" max="600" value="500" />
+            <span>px</span>
+          </label>
+          <label class="control" title="Spacing around the chatlog text box">
+            Pad
+            <input id="textPaddingInput" class="text-padding-input" type="number" min="0" max="80" step="1" value="8" />
+            <span>px</span>
+          </label>
+        </div>
+        <label class="control" title="Outline / shadow styling">
+          Outline
+          <select id="outlineStyleSelect">
+            <option value="stroke" selected>Outline</option>
+            <option value="shadow">Drop Shadow</option>
+            <option value="both">Outline &amp; Shadow</option>
+            <option value="none">None</option>
+          </select>
+        </label>
+        <label class="control" id="strokeWidthControl" title="Outline stroke thickness in pixels">
+          Thickness
+          <input id="strokeWidthInput" class="stroke-width-input" type="number" min="0.5" max="6" step="0.5" value="1.5" />
+          <span>px</span>
+        </label>
+        <label class="control" title="Toggle dark background behind chat text">
+          <input id="backgroundToggle" type="checkbox" checked />
+          Dark text background
+        </label>
+        <div class="side-row">
+          <button id="resetTextPositionButton" class="btn btn-neutral btn-sm">Reset Text Position</button>
+        </div>
+      </section>
+
+      <section class="side-section" id="atmosphereToolbarGroup">
+        <div class="side-section-title">Canvas &amp; atmosphere</div>
+        <label class="control" title="Upload background screenshot">
+          Background
+          <input id="backgroundImageInput" type="file" accept="image/*" />
+        </label>
+        <div class="side-row">
+          <button id="removeImageButton" class="btn btn-danger btn-sm">Remove Background</button>
+        </div>
+        <label class="control" title="Cinematic color filter for the selected image layer">
+          Filter
+          <select id="atmospherePresetSelect">
+            <option value="none" selected>Original</option>
+            <option value="sunset">Warm Sunset</option>
+            <option value="noir">Noir / B&amp;W</option>
+            <option value="contrast">High Contrast</option>
+            <option value="invert">Inverse</option>
+          </select>
+        </label>
+        <div id="filterIntensitySliderContainer" class="control" style="display: none;" title="Fine-tune filter intensity">
+          <input id="filterIntensityInput" type="range" min="0" max="100" step="5" value="100" title="Filter intensity" />
+          <span id="filterIntensityValue">100%</span>
+        </div>
+        <label class="control" title="Toggle dark edge vignette">
+          <input id="vignetteToggle" type="checkbox" />
+          Vignette
+        </label>
+        <div id="vignetteSliderContainer" class="control" style="display: none;">
+          <input id="vignetteStrengthInput" type="range" min="10" max="100" step="5" value="45" title="Vignette darkness" />
+          <span id="vignetteStrengthValue">45%</span>
+        </div>
+        <label class="control" title="Toggle film grain">
+          <input id="filmGrainToggle" type="checkbox" />
+          Film grain
+        </label>
+        <div id="filmGrainSliderContainer" class="control" style="display: none;">
+          <input id="filmGrainStrengthInput" type="range" min="5" max="75" step="5" value="25" title="Film grain intensity" />
+          <span id="filmGrainStrengthValue">25%</span>
+        </div>
+      </section>
+
+      <section class="side-section">
+        <div class="side-section-title">Censorship</div>
+        <label class="control" title="Censorship effect for blurred text">
+          Style
+          <select id="censorStyleSelect">
+            <option value="blur" selected>Gaussian Blur</option>
+            <option value="mosaic">Mosaic Blur</option>
+            <option value="redact">Redacted Black Bar</option>
+          </select>
+        </label>
+        <label class="control" id="blurStrengthControl" title="Blur intensity or mosaic block size">
+          <span id="blurStrengthLabel">Strength</span>
+          <input id="blurStrengthInput" type="range" min="1" max="10" step="1" value="3" />
+          <span id="blurStrengthValue">3px</span>
+        </label>
+      </section>
+
+      <section class="side-section">
+        <div class="side-section-title">Export</div>
+        <label class="control" title="JPEG export quality">
+          JPEG quality
+          <input id="jpegQualityInput" type="range" min="0.05" max="1" step="0.01" value="1" />
+          <span id="jpegQualityValue">100%</span>
+        </label>
+        <div class="side-row">
+          <button id="downloadJpegButton" class="btn btn-neutral">Download JPEG</button>
+          <button id="uploadImgbbButton" class="btn btn-imgbb" title="Upload screenshot to ImgBB and copy the link">Upload ImgBB</button>
+          <button id="imgbbHelpButton" class="btn-icon-help" type="button" title="How to get a free ImgBB API key">?</button>
+        </div>
+        <button id="resetSettingsButton" type="button" class="btn btn-neutral btn-sm" title="Reset all settings to default values">Reset Settings</button>
+      </section>
+    </aside>
   </main>
 
-  <div class="bottom-actions-panel" id="actionsPanel">
-    <div class="actions-group">
-      <span class="actions-group-label">Text & Censor</span>
-      <button id="blurSelectionButton" class="btn btn-accent" title="Wrap selection with ☘ (Shortcut: Ctrl+B)">Blur Selection ☘ (Ctrl+B)</button>
-      <div class="color-control" title="Select text, then set its !{#HEX} color. The picker follows the current action color.">
-        <span class="control" style="color: var(--muted); font-size: 12px; font-weight: 700;">Color:</span>
-        <input id="chatColorInput" class="chat-color-swatch" type="color" value="#d1d1d1" title="Pick a chat color" />
-        <input id="chatColorHexInput" class="chat-color-hex" type="text" value="#D1D1D1" maxlength="7" spellcheck="false" title="Hex color" />
-        <select id="actionColorPreset" class="action-color-select" title="Apply a standard action color">
-          <option value="">From selection</option>
-          <option value="#D1D1D1">Say</option>
-          <option value="#F0F0F0">Say (bright)</option>
-          <option value="#D8D8D8">Say (dim)</option>
-          <option value="#D4D4D4">Say (soft)</option>
-          <option value="#C2A2DA">Action /me</option>
-          <option value="#FF00C3">Alert [!]</option>
-        </select>
-        <button id="setColorButton" class="btn btn-accent" type="button" title="Apply color to selected text (Ctrl+Shift+C)">Set Color</button>
-      </div>
-      <button id="clearButton" class="btn btn-danger">Clear Text</button>
-    </div>
-
-    <div class="actions-group">
-      <span class="actions-group-label">Canvas & View</span>
-      <button id="resetTextPositionButton" class="btn btn-neutral">Reset Text Position</button>
-      <button id="removeImageButton" class="btn btn-danger">Remove Background</button>
-    </div>
-
-    <div class="actions-group">
-      <span class="actions-group-label">Export Image</span>
-      <button id="uploadImgbbButton" class="btn btn-imgbb" title="Upload screenshot to ImgBB and copy direct link to clipboard (Ctrl+V)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        <span>Upload to ImgBB</span>
-      </button>
-      <button id="imgbbHelpButton" class="btn-icon-help" type="button" title="How to get free ImgBB API key">?</button>
-      <button id="copyPngButton" class="btn btn-export">Copy PNG</button>
-      <button id="downloadPngButton" class="btn btn-export">Download PNG</button>
-      <button id="downloadJpegButton" class="btn btn-export">Download JPEG</button>
-    </div>
-  </div>
-
-  <!-- ImgBB Setup Guide Modal -->
   <div id="imgbbModal" class="modal-backdrop" style="display: none;">
     <div class="modal-dialog">
       <div class="modal-header">
         <div class="modal-title">
-          <span>☘</span>
-          <span>ImgBB API Key Setup Guide</span>
+          <span>ImgBB API Key Setup</span>
         </div>
         <button type="button" id="closeImgbbModalBtn" class="toast-close" title="Close modal">&times;</button>
       </div>
       <div class="modal-body">
-        <p style="color: #cccccc; line-height: 1.5; margin: 0;">
+        <p style="color: #a1a1aa; line-height: 1.5; margin: 0;">
           <strong>ImgBB</strong> is a free image hosting service. To let this tool upload your screenshots directly to ImgBB and generate quick links, a free API key is needed.
         </p>
-
         <div class="modal-step">
           <div class="modal-step-number">1</div>
           <div class="modal-step-content">
@@ -1834,55 +2137,39 @@
             </div>
           </div>
         </div>
-
         <div class="modal-step">
           <div class="modal-step-number">2</div>
           <div class="modal-step-content">
             <div class="modal-step-title">Get your free API Key</div>
             <div class="modal-step-desc">
-              Visit <a href="https://api.imgbb.com/" target="_blank" rel="noopener noreferrer">api.imgbb.com</a> and click the blue <strong>"Get API key"</strong> button to generate your 32-character key.
+              Visit <a href="https://api.imgbb.com/" target="_blank" rel="noopener noreferrer">api.imgbb.com</a> and click <strong>Get API key</strong> to generate your 32-character key.
             </div>
           </div>
         </div>
-
         <div class="modal-step">
           <div class="modal-step-number">3</div>
           <div class="modal-step-content">
-            <div class="modal-step-title">Save your key below (or in Settings)</div>
-            <div class="modal-step-desc">
-              Paste your key here to use it immediately in this browser:
-            </div>
+            <div class="modal-step-title">Save your key below</div>
+            <div class="modal-step-desc">Paste your key here to use it immediately in this browser:</div>
             <div class="modal-input-group">
               <input type="text" id="imgbbKeyInput" class="modal-input" placeholder="Paste 32-character API key here..." autocomplete="off" spellcheck="false" />
-              <button type="button" id="saveImgbbKeyBtn" class="btn btn-neutral" style="font-weight: 600;">Save Key</button>
+              <button type="button" id="saveImgbbKeyBtn" class="btn btn-neutral">Save Key</button>
             </div>
-            <div id="imgbbKeyStatus" style="font-size: 11px; margin-top: 5px; color: #888888;"></div>
+            <div id="imgbbKeyStatus" style="font-size: 11px; margin-top: 5px; color: #a1a1aa;"></div>
           </div>
         </div>
-
         <div class="modal-tip-box">
-          💡 <strong>No key needed for normal use!</strong> If you just want to paste your rendered screenshot into Discord, forum posts, or graphic software, click the <strong>Copy PNG</strong> button next to Upload — it copies directly to your clipboard completely offline with no setup required.
+          No key needed for normal use. <strong>Copy PNG</strong> copies directly to your clipboard offline.
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" id="clearImgbbKeyBtn" class="btn btn-neutral" style="font-size: 12px;">Clear Stored Key</button>
-        <button type="button" id="doneImgbbModalBtn" class="btn btn-imgbb">Done</button>
+        <button type="button" id="doneImgbbModalBtn" class="btn btn-export">Done</button>
       </div>
     </div>
   </div>
 
   <div id="toastContainer" class="toast-container"></div>
-
-  <div class="footer-note" id="footerNote">
-    <span class="tip-label">Tip ☘</span>
-    <div class="tip-carousel">
-      <span id="tipText" class="tip-text">Add images on top of the canvas via the Layers box or "+ Add Image Layer". Drag on the canvas to move any layer, or use the mouse wheel to scale image layers.</span>
-    </div>
-    <div class="tip-controls">
-      <button type="button" id="tipPrevBtn" class="tip-nav-btn" title="Previous tip">◀</button>
-      <button type="button" id="tipNextBtn" class="tip-nav-btn" title="Next tip">▶</button>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -5065,14 +5352,14 @@
     if (!imgbbKeyStatus) return;
     const storedKey = localStorage.getItem("imgbb_user_key") || "";
     if (storedKey) {
-      imgbbKeyStatus.innerHTML = `<span style="color: #00d984;">✓ Key saved locally in browser (${storedKey.slice(0, 4)}...${storedKey.slice(-4)})</span>`;
+      imgbbKeyStatus.innerHTML = `<span style="color: #e4e4e7;">✓ Key saved locally in browser (${storedKey.slice(0, 4)}...${storedKey.slice(-4)})</span>`;
       return;
     }
     try {
       const res = await fetch("/api/imgbb-status");
       const statusData = await res.json();
       if (statusData.hasEnvKey) {
-        imgbbKeyStatus.innerHTML = `<span style="color: #00d984;">✓ Key is configured in app environment</span>`;
+        imgbbKeyStatus.innerHTML = `<span style="color: #e4e4e7;">✓ Key is configured in app environment</span>`;
       } else {
         imgbbKeyStatus.innerHTML = `<span style="color: #f59e0b;">⚠️ No key found. Follow the 3 steps above to add one.</span>`;
       }
@@ -5125,7 +5412,7 @@
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
 
-    const iconHtml = type === "success" ? "☘" : "⚠️";
+    const iconHtml = type === "success" ? "✓" : "⚠️";
 
     let actionsHtml = "";
     if (linkUrl) {
@@ -5399,7 +5686,7 @@
     "Atmosphere & Cinematic Filters: Try the <strong>Mood presets</strong> (Warm Sunset, Noir / B&W, High Contrast, Cold Night) along with <strong>Vignette</strong> and <strong>Film Grain</strong> in the top toolbar to give your RP screenshot cinematic immersion.",
     "Your customized canvas dimensions, fonts, outline styles, and censorship settings are automatically saved and remembered across visits.",
     "Add images on top of the canvas via the Layers box or <strong>+ Add Image Layer</strong>. Drag on the canvas to move any layer, or use the mouse wheel to scale.",
-    "Highlight any text and press <strong>Ctrl+B</strong> (or click <strong>Blur Selection ☘</strong>) to censor sensitive names, radio channels, or locations.",
+    "Highlight any text and press <strong>Ctrl+B</strong> (or click <strong>Blur Selection</strong>) to censor sensitive names, radio channels, or locations.",
     "Paste logs with <strong>!{#HEX}</strong> color codes. Timestamps are hidden in the preview. Select text and use <strong>Set Color</strong> (Ctrl+Shift+C) — the picker follows the current action color.",
     "Switch censor modes in top controls: choose between smooth <strong>Gaussian Blur</strong>, retro <strong>Mosaic Blur</strong>, or <strong>Redacted Black Bar</strong>.",
     "Press <strong>Ctrl+V</strong> anywhere to instantly paste screenshots or copied images directly onto the canvas as new layers.",
