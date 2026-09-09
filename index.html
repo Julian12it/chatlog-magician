@@ -1218,6 +1218,7 @@
     min-height: 0;
     font-family: var(--chat-font-family, Arial, Helvetica, sans-serif);
     font-size: var(--chat-font-size);
+    font-weight: 700;
     line-height: 1.25;
     white-space: pre-wrap;
     overflow-wrap: break-word;
@@ -1244,11 +1245,10 @@
     background: rgba(0, 0, 0, 0.84);
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
-    text-shadow: var(--chat-text-shadow,
-      -1px -1px 0 rgba(0,0,0,0.6),
-       1px -1px 0 rgba(0,0,0,0.6),
-      -1px  1px 0 rgba(0,0,0,0.6),
-       1px  1px 0 rgba(0,0,0,0.6));
+    paint-order: stroke fill;
+    -webkit-text-stroke-width: var(--chat-text-stroke-width, 0px);
+    -webkit-text-stroke-color: #000;
+    text-shadow: var(--chat-text-shadow, none);
   }
 
   .no-text-background .text-bg {
@@ -2771,34 +2771,26 @@
   function updateOutlineSettings() {
     const { style, thickness } = getOutlineSettings();
     const t = thickness.toFixed(1) + "px";
-    const negT = (-thickness).toFixed(1) + "px";
 
     if (style === "none") {
       strokeWidthControl.style.display = "none";
+      preview.style.setProperty("--chat-text-stroke-width", "0px");
       preview.style.setProperty("--chat-text-shadow", "none");
     } else {
       strokeWidthControl.style.display = "flex";
       if (style === "stroke") {
-        preview.style.setProperty("--chat-text-shadow", `
-          ${negT} ${negT} 0 rgba(0,0,0,0.88),
-          ${t} ${negT} 0 rgba(0,0,0,0.88),
-          ${negT} ${t} 0 rgba(0,0,0,0.88),
-          ${t} ${t} 0 rgba(0,0,0,0.88)
-        `);
+        preview.style.setProperty("--chat-text-stroke-width", t);
+        preview.style.setProperty("--chat-text-shadow", "none");
       } else if (style === "shadow") {
         const shadowOffset = Math.max(1, thickness).toFixed(1) + "px";
         const shadowBlur = Math.max(2, thickness * 1.6).toFixed(1) + "px";
+        preview.style.setProperty("--chat-text-stroke-width", "0px");
         preview.style.setProperty("--chat-text-shadow", `${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)`);
       } else if (style === "both") {
         const shadowOffset = (thickness * 1.4).toFixed(1) + "px";
         const shadowBlur = (thickness * 2).toFixed(1) + "px";
-        preview.style.setProperty("--chat-text-shadow", `
-          ${negT} ${negT} 0 rgba(0,0,0,0.88),
-          ${t} ${negT} 0 rgba(0,0,0,0.88),
-          ${negT} ${t} 0 rgba(0,0,0,0.88),
-          ${t} ${t} 0 rgba(0,0,0,0.88),
-          ${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)
-        `);
+        preview.style.setProperty("--chat-text-stroke-width", t);
+        preview.style.setProperty("--chat-text-shadow", `${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)`);
       }
     }
     render();
@@ -4292,27 +4284,40 @@
     ctx.restore();
   }
 
-  function drawMosaicCensoredText(ctx, text, x, y, fillStyle, lineHeight, blockSize, outline) {
-    const textWidth = Math.ceil(ctx.measureText(text).width);
-    if (textWidth <= 0 || lineHeight <= 0) return;
+  function applyCanvasTextOutline(ctx, text, x, y, fillStyle, outline) {
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.miterLimit = 2;
 
-    const block = Math.max(3, Math.min(Math.round(blockSize), 20));
-
-    // First render the text normally on canvas so stroke, color, and background integrate seamlessly
-    ctx.save();
     if (outline.style === "stroke" || outline.style === "both") {
-      ctx.lineWidth = outline.thickness;
-      ctx.strokeStyle = "rgba(0,0,0,0.88)";
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = outline.thickness * 2;
       ctx.strokeText(text, x, y);
     }
+
     if (outline.style === "shadow" || outline.style === "both") {
       ctx.shadowColor = "rgba(0,0,0,0.95)";
       ctx.shadowOffsetX = outline.thickness;
       ctx.shadowOffsetY = outline.thickness;
       ctx.shadowBlur = Math.max(2, outline.thickness * 1.6);
     }
+
     ctx.fillStyle = fillStyle;
     ctx.fillText(text, x, y);
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  }
+
+  function drawMosaicCensoredText(ctx, text, x, y, fillStyle, lineHeight, blockSize, outline) {
+    const textWidth = Math.ceil(ctx.measureText(text).width);
+    if (textWidth <= 0 || lineHeight <= 0) return;
+
+    const block = Math.max(3, Math.min(Math.round(blockSize), 20));
+
+    ctx.save();
+    applyCanvasTextOutline(ctx, text, x, y, fillStyle, outline);
     ctx.restore();
 
     // Downscale and upscale with nearest-neighbor to produce true, crisp mosaic pixel blocks
@@ -4365,21 +4370,7 @@
     }
 
     ctx.save();
-    if (outline.style === "stroke" || outline.style === "both") {
-      ctx.lineWidth = outline.thickness;
-      ctx.strokeStyle = "rgba(0,0,0,0.88)";
-      ctx.strokeText(text, x, y);
-    }
-
-    if (outline.style === "shadow" || outline.style === "both") {
-      ctx.shadowColor = "rgba(0,0,0,0.95)";
-      ctx.shadowOffsetX = outline.thickness;
-      ctx.shadowOffsetY = outline.thickness;
-      ctx.shadowBlur = Math.max(2, outline.thickness * 1.6);
-    }
-
-    ctx.fillStyle = fillStyle;
-    ctx.fillText(text, x, y);
+    applyCanvasTextOutline(ctx, text, x, y, fillStyle, outline);
     ctx.restore();
   }
 
