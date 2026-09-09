@@ -2798,9 +2798,23 @@
     return { style, thickness: Math.max(0.5, Math.min(thickness, 10)) };
   }
 
+  function getEvenOutlineOffsets(thickness) {
+    const d = Math.max(0.5, thickness);
+    return [
+      [-d, 0], [d, 0], [0, -d], [0, d],
+      [-d, -d], [d, -d], [-d, d], [d, d]
+    ];
+  }
+
+  function getEvenOutlineTextShadow(thickness) {
+    return getEvenOutlineOffsets(thickness)
+      .map(([ox, oy]) => `${ox}px ${oy}px 0 #000`)
+      .join(", ");
+  }
+
   function updateOutlineSettings() {
     const { style, thickness } = getOutlineSettings();
-    const t = thickness.toFixed(1) + "px";
+    const evenOutline = getEvenOutlineTextShadow(thickness);
 
     if (style === "none") {
       strokeWidthControl.style.display = "none";
@@ -2809,8 +2823,8 @@
     } else {
       strokeWidthControl.style.display = "flex";
       if (style === "stroke") {
-        preview.style.setProperty("--chat-text-stroke-width", t);
-        preview.style.setProperty("--chat-text-shadow", "none");
+        preview.style.setProperty("--chat-text-stroke-width", "0px");
+        preview.style.setProperty("--chat-text-shadow", evenOutline);
       } else if (style === "shadow") {
         const shadowOffset = Math.max(1, thickness).toFixed(1) + "px";
         const shadowBlur = Math.max(2, thickness * 1.6).toFixed(1) + "px";
@@ -2819,8 +2833,8 @@
       } else if (style === "both") {
         const shadowOffset = (thickness * 1.4).toFixed(1) + "px";
         const shadowBlur = (thickness * 2).toFixed(1) + "px";
-        preview.style.setProperty("--chat-text-stroke-width", t);
-        preview.style.setProperty("--chat-text-shadow", `${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)`);
+        preview.style.setProperty("--chat-text-stroke-width", "0px");
+        preview.style.setProperty("--chat-text-shadow", `${evenOutline}, ${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)`);
       }
     }
     render();
@@ -4315,14 +4329,14 @@
   }
 
   function applyCanvasTextOutline(ctx, text, x, y, fillStyle, outline) {
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-    ctx.miterLimit = 2;
+    x = Math.round(x);
+    y = Math.round(y);
 
     if (outline.style === "stroke" || outline.style === "both") {
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = outline.thickness * 2;
-      ctx.strokeText(text, x, y);
+      ctx.fillStyle = "#000000";
+      getEvenOutlineOffsets(outline.thickness).forEach(([ox, oy]) => {
+        ctx.fillText(text, x + ox, y + oy);
+      });
     }
 
     if (outline.style === "shadow" || outline.style === "both") {
@@ -4492,6 +4506,7 @@
   }
 
   let sharedChatCanvas = null;
+  let sharedHiResCanvas = null;
   let jpegPreviewPending = false;
 
   function scheduleJpegPreview() {
@@ -4531,13 +4546,12 @@
   function drawTextLayerToCanvas(ctx, fontPx, fontFamily, lineHeight, maxTextWidth) {
     ctx.font = getCanvasFont(fontPx, fontFamily);
     ctx.textBaseline = "top";
-    ctx.lineJoin = "round";
 
     const boxPad = getTextPadding();
     const innerX = 4;
     const innerY = 2;
-    const originX = textOffsetX + boxPad;
-    const originY = textOffsetY + boxPad;
+    const originX = Math.round(textOffsetX + boxPad);
+    const originY = Math.round(textOffsetY + boxPad);
 
     const wrappedRows = buildWrappedRows(ctx, maxTextWidth);
 
@@ -4591,7 +4605,7 @@
   }
 
   function createChatCanvas(targetCanvas = null) {
-    const scale = 1;
+    const ss = getFontSize() < 22 ? 2 : 1;
     const fontPx = getFontSize();
     const fontFamily = getFontFamily();
     const lineHeight = Math.round(fontPx * 1.25);
@@ -4601,16 +4615,26 @@
     const canvasHeight = getCanvasHeight();
 
     const canvas = targetCanvas || document.createElement("canvas");
-    if (canvas.width !== canvasWidth * scale || canvas.height !== canvasHeight * scale) {
-      canvas.width = canvasWidth * scale;
-      canvas.height = canvasHeight * scale;
+    if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
     }
     canvas.style.width = canvasWidth + "px";
     canvas.style.height = canvasHeight + "px";
 
-    const ctx = canvas.getContext("2d");
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(scale, scale);
+    if (!sharedHiResCanvas) {
+      sharedHiResCanvas = document.createElement("canvas");
+    }
+    const hi = sharedHiResCanvas;
+    if (hi.width !== canvasWidth * ss || hi.height !== canvasHeight * ss) {
+      hi.width = canvasWidth * ss;
+      hi.height = canvasHeight * ss;
+    }
+
+    const ctx = hi.getContext("2d");
+    ctx.setTransform(ss, 0, 0, ss, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
     ctx.fillStyle = "#000";
@@ -4709,6 +4733,13 @@
 
       ctx.restore();
     });
+
+    const out = canvas.getContext("2d");
+    out.setTransform(1, 0, 0, 1, 0, 0);
+    out.imageSmoothingEnabled = true;
+    out.imageSmoothingQuality = "high";
+    out.clearRect(0, 0, canvasWidth, canvasHeight);
+    out.drawImage(hi, 0, 0, canvasWidth, canvasHeight);
 
     return canvas;
   }
