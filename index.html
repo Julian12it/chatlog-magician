@@ -27,6 +27,7 @@
     --accent-bg: rgba(0, 158, 96, 0.16);
     --accent-glow: rgba(0, 158, 96, 0.35);
     --chat-font-size: 14px;
+    --chat-font-weight: 700;
     --chat-text-padding: 8px;
     --text-panel-width: 500px;
   }
@@ -1218,7 +1219,7 @@
     min-height: 0;
     font-family: var(--chat-font-family, Arial, Helvetica, sans-serif);
     font-size: var(--chat-font-size);
-    font-weight: 700;
+    font-weight: var(--chat-font-weight, 700);
     line-height: 1.25;
     white-space: pre-wrap;
     overflow-wrap: break-word;
@@ -1992,7 +1993,8 @@
         <label class="control" title="Font family">
           Font
           <select id="fontFamilySelect">
-            <option value="Arial, Helvetica, sans-serif" selected>Arial</option>
+            <option value="arial-bold" selected>Arial Bold</option>
+            <option value="arial">Arial</option>
             <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
             <option value="Verdana, Geneva, sans-serif">Verdana</option>
             <option value="'Roboto', sans-serif">Roboto</option>
@@ -2332,7 +2334,7 @@
   const SETTINGS_STORAGE_KEY = "gtarp_chatlog_magician_settings_v1";
 
   const DEFAULT_SETTINGS = {
-    fontFamily: "Arial, Helvetica, sans-serif",
+    fontFamily: "arial-bold",
     fontSize: 14,
     textPanelWidth: 500,
     textPadding: 8,
@@ -2402,7 +2404,7 @@
       const s = { ...DEFAULT_SETTINGS, ...parsed };
 
       if (fontFamilySelect && typeof s.fontFamily === "string") {
-        fontFamilySelect.value = s.fontFamily;
+        fontFamilySelect.value = normalizeFontFamilyValue(s.fontFamily);
       }
       if (fontSize && typeof s.fontSize === "number" && !isNaN(s.fontSize)) {
         fontSize.value = Math.max(8, Math.min(s.fontSize, 72));
@@ -2753,12 +2755,40 @@
     return Math.min(getTextPanelWidth(), remaining);
   }
 
+  function normalizeFontFamilyValue(value) {
+    if (!value) return DEFAULT_SETTINGS.fontFamily;
+    if (value === "arial-bold" || value === "Arial, Helvetica, sans-serif") return "arial-bold";
+    if (value === "arial") return "arial";
+    return value;
+  }
+
+  function getFontSpec() {
+    const value = normalizeFontFamilyValue(fontFamilySelect ? fontFamilySelect.value : DEFAULT_SETTINGS.fontFamily);
+    if (value === "arial-bold") {
+      return { family: "Arial, Helvetica, sans-serif", weight: "700" };
+    }
+    if (value === "arial") {
+      return { family: "Arial, Helvetica, sans-serif", weight: "400" };
+    }
+    return { family: value, weight: "700" };
+  }
+
   function getFontFamily() {
-    return fontFamilySelect ? fontFamilySelect.value : "Arial, Helvetica, sans-serif";
+    return getFontSpec().family;
+  }
+
+  function getFontWeight() {
+    return getFontSpec().weight;
+  }
+
+  function getCanvasFont(fontPx, family = getFontFamily(), weight = getFontWeight()) {
+    return `${weight} ${fontPx}px ${family}`;
   }
 
   function updateFontFamily() {
-    preview.style.setProperty("--chat-font-family", getFontFamily());
+    const { family, weight } = getFontSpec();
+    preview.style.setProperty("--chat-font-family", family);
+    preview.style.setProperty("--chat-font-weight", weight);
     render();
   }
 
@@ -4152,7 +4182,7 @@
 
     const measuringCanvas = document.createElement("canvas");
     const ctx = measuringCanvas.getContext("2d");
-    ctx.font = `700 ${fontPx}px ${getFontFamily()}`;
+    ctx.font = getCanvasFont(fontPx);
 
     const sourceLines = getVisibleLinesForCanvas();
 
@@ -4499,7 +4529,7 @@
   }
 
   function drawTextLayerToCanvas(ctx, fontPx, fontFamily, lineHeight, maxTextWidth) {
-    ctx.font = `700 ${fontPx}px ${fontFamily}`;
+    ctx.font = getCanvasFont(fontPx, fontFamily);
     ctx.textBaseline = "top";
     ctx.lineJoin = "round";
 
