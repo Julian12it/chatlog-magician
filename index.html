@@ -1976,6 +1976,7 @@
               <option value="sunset">Warm Sunset</option>
               <option value="noir">Noir / B&amp;W</option>
               <option value="contrast">High Contrast</option>
+              <option value="deepfry">Deep Fry</option>
               <option value="invert">Inverse</option>
             </select>
           </div>
@@ -2059,6 +2060,7 @@
             <option value="sunset">Warm Sunset</option>
             <option value="noir">Noir / B&amp;W</option>
             <option value="contrast">High Contrast</option>
+            <option value="deepfry">Deep Fry</option>
             <option value="invert">Inverse</option>
           </select>
         </label>
@@ -2555,6 +2557,7 @@
       case "sunset": return "Sunset";
       case "noir": return "Noir";
       case "contrast": return "Contrast";
+      case "deepfry": return "Deep Fry";
       case "invert":
       case "cold": return "Inverse";
       default: return "";
@@ -2590,6 +2593,8 @@
         return "sepia(0.35) saturate(1.4) contrast(1.08) brightness(1.02)";
       case "contrast":
         return "contrast(1.35) saturate(1.3) brightness(0.98)";
+      case "deepfry":
+        return "contrast(2.55) brightness(1.15) saturate(1.2)";
       case "invert":
       case "cold":
         return "invert(100%)";
@@ -2606,11 +2611,203 @@
         return "sepia(35%) saturate(140%) contrast(108%) brightness(102%)";
       case "contrast":
         return "contrast(135%) saturate(130%) brightness(98%)";
+      case "deepfry":
+        return "contrast(255%) brightness(115%) saturate(120%)";
       case "invert":
       case "cold":
         return "invert(100%)";
       default:
         return "none";
+    }
+  }
+
+  const DEEP_FRY = {
+    brightness: 1.15,
+    contrast: 2.55,
+    saturate: 1.12,
+    sharpen: 0.62,
+    noise: 18,
+    jpegTimes: 8,
+    jpegQuality: 0.175
+  };
+
+  let deepFrySeq = 0;
+  const deepFryImageIds = new WeakMap();
+  const deepFryCache = new Map();
+  const deepFryPending = new Set();
+  let deepFryTimer = null;
+  let deepFryQueued = null;
+
+  function getDeepFryImageId(img) {
+    if (!deepFryImageIds.has(img)) {
+      deepFryImageIds.set(img, ++deepFrySeq);
+    }
+    return deepFryImageIds.get(img);
+  }
+
+  function deepFryCacheKey(img, width, height) {
+    return `${getDeepFryImageId(img)}:${Math.round(width)}x${Math.round(height)}`;
+  }
+
+  function clearDeepFryCache() {
+    deepFryCache.clear();
+    deepFryPending.clear();
+    deepFryQueued = null;
+    if (deepFryTimer) {
+      clearTimeout(deepFryTimer);
+      deepFryTimer = null;
+    }
+  }
+
+  function applySharpen(ctx, width, height, amount) {
+    if (amount <= 0 || width < 3 || height < 3) return;
+    const src = ctx.getImageData(0, 0, width, height);
+    const copy = new Uint8ClampedArray(src.data);
+    const data = src.data;
+    const mix = Math.max(0, Math.min(1, amount));
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const i = (y * width + x) * 4;
+        for (let c = 0; c < 3; c++) {
+          const sharp = (
+            -copy[i - width * 4 + c] -
+            copy[i - 4 + c] +
+            copy[i + c] * 5 -
+            copy[i + 4 + c] -
+            copy[i + width * 4 + c]
+          );
+          data[i + c] = copy[i + c] * (1 - mix) + sharp * mix;
+        }
+      }
+    }
+    ctx.putImageData(src, 0, 0);
+  }
+
+  function applyNoise(ctx, width, height, strength) {
+    if (strength <= 0) return;
+    const img = ctx.getImageData(0, 0, width, height);
+    const data = img.data;
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] += (Math.random() * 2 - 1) * strength;
+      data[i + 1] += (Math.random() * 2 - 1) * strength;
+      data[i + 2] += (Math.random() * 2 - 1) * strength;
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  async function decodeJpegBlob(blob) {
+    if (typeof createImageBitmap === "function") {
+      return createImageBitmap(blob);
+    }
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+      return img;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  async function cookDeepFry(sourceImg, destW, destH) {
+    let width = Math.max(1, Math.round(destW));
+    let height = Math.max(1, Math.round(destH));
+    const maxEdge = 1400;
+    const shrink = Math.min(1, maxEdge / Math.max(width, height));
+    width = Math.max(1, Math.round(width * shrink));
+    height = Math.max(1, Math.round(height * shrink));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    ctx.filter = `brightness(${DEEP_FRY.brightness}) contrast(${DEEP_FRY.contrast}) saturate(${DEEP_FRY.saturate})`;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(sourceImg, 0, 0, width, height);
+    ctx.filter = "none";
+
+    applySharpen(ctx, width, height, DEEP_FRY.sharpen);
+    applyNoise(ctx, width, height, DEEP_FRY.noise);
+
+    for (let i = 0; i < DEEP_FRY.jpegTimes; i++) {
+      const quality = Math.max(0.05, DEEP_FRY.jpegQuality + Math.random() * 0.025);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
+      if (!blob) break;
+      const frame = await decodeJpegBlob(blob);
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(frame, 0, 0, width, height);
+      ctx.drawImage(canvas, 0, 0, width, 2, 0, -1, width, 2);
+      ctx.drawImage(canvas, 0, height - 2, width, 1, 0, height - 1, width, 1);
+      if (typeof frame.close === "function") frame.close();
+    }
+
+    return canvas;
+  }
+
+  function scheduleDeepFryCook(img, destW, destH) {
+    const key = deepFryCacheKey(img, destW, destH);
+    if (deepFryCache.has(key) || deepFryPending.has(key)) return;
+    deepFryQueued = { img, destW, destH, key };
+    if (deepFryTimer) clearTimeout(deepFryTimer);
+    deepFryTimer = setTimeout(() => {
+      const job = deepFryQueued;
+      deepFryTimer = null;
+      deepFryQueued = null;
+      if (!job || deepFryCache.has(job.key) || deepFryPending.has(job.key)) return;
+      deepFryPending.add(job.key);
+      cookDeepFry(job.img, job.destW, job.destH)
+        .then(canvas => {
+          if (deepFryCache.size >= 4) {
+            const oldest = deepFryCache.keys().next().value;
+            deepFryCache.delete(oldest);
+          }
+          deepFryCache.set(job.key, canvas);
+          scheduleJpegPreview();
+        })
+        .catch(err => {
+          console.warn("Deep fry failed:", err);
+        })
+        .finally(() => {
+          deepFryPending.delete(job.key);
+        });
+    }, 140);
+  }
+
+  function getDeepFriedSource(img, destW, destH) {
+    if (!img) return null;
+    const key = deepFryCacheKey(img, destW, destH);
+    const cached = deepFryCache.get(key);
+    if (cached) return cached;
+    scheduleDeepFryCook(img, destW, destH);
+    return null;
+  }
+
+  function drawImageWithPreset(ctx, img, x, y, w, h, preset) {
+    if (preset === "deepfry") {
+      const fried = getDeepFriedSource(img, w, h);
+      if (fried) {
+        ctx.drawImage(fried, x, y, w, h);
+        return;
+      }
+    }
+
+    const filterStr = getCanvasFilterForPreset(preset);
+    if (filterStr && filterStr !== "none") {
+      ctx.filter = filterStr;
+    }
+    ctx.drawImage(img, x, y, w, h);
+    ctx.filter = "none";
+
+    if (preset === "sunset") {
+      ctx.save();
+      ctx.globalCompositeOperation = "overlay";
+      ctx.fillStyle = "rgba(255, 140, 20, 0.16)";
+      ctx.fillRect(x, y, w, h);
+      ctx.restore();
     }
   }
 
@@ -3014,6 +3211,7 @@
 
       bgImageObject = new Image();
       bgImageObject.onload = () => {
+        clearDeepFryCache();
         bgX = 0;
         bgY = 0;
         bgScale = Math.max(
@@ -3490,6 +3688,7 @@
     bgX = 0;
     bgY = 0;
     bgScale = 1;
+    clearDeepFryCache();
     updateBackgroundTransform();
     renderLayersUI();
     updateDomLayers();
@@ -4649,34 +4848,9 @@
       if (layer.type === "background") {
         if (bgImageObject && bgImageObject.complete && bgImageObject.naturalWidth > 0) {
           const bgPreset = layer.filter || "none";
-          const filterStr = getCanvasFilterForPreset(bgPreset);
-
-          if (filterStr && filterStr !== "none") {
-            ctx.filter = filterStr;
-          }
-
-          ctx.drawImage(
-            bgImageObject,
-            bgX,
-            bgY,
-            bgImageObject.naturalWidth * bgScale,
-            bgImageObject.naturalHeight * bgScale
-          );
-
-          ctx.filter = "none";
-
-          if (bgPreset === "sunset") {
-            ctx.save();
-            ctx.globalCompositeOperation = "overlay";
-            ctx.fillStyle = "rgba(255, 140, 20, 0.16)";
-            ctx.fillRect(
-              bgX,
-              bgY,
-              bgImageObject.naturalWidth * bgScale,
-              bgImageObject.naturalHeight * bgScale
-            );
-            ctx.restore();
-          }
+          const bgW = bgImageObject.naturalWidth * bgScale;
+          const bgH = bgImageObject.naturalHeight * bgScale;
+          drawImageWithPreset(ctx, bgImageObject, bgX, bgY, bgW, bgH, bgPreset);
 
           if (isVignetteEnabled()) {
             drawVignette(ctx, canvasWidth, canvasHeight, getVignetteStrength());
@@ -4696,36 +4870,9 @@
       } else if (layer.type === "image") {
         if (layer.img && layer.img.complete && layer.img.naturalWidth > 0) {
           const imgPreset = layer.filter || "none";
-          const imgFilterStr = getCanvasFilterForPreset(imgPreset);
-          if (imgFilterStr && imgFilterStr !== "none") {
-            ctx.filter = imgFilterStr;
-          }
-
           const imgW = layer.img.naturalWidth * (layer.scale || 1);
           const imgH = layer.img.naturalHeight * (layer.scale || 1);
-
-          ctx.drawImage(
-            layer.img,
-            layer.x,
-            layer.y,
-            imgW,
-            imgH
-          );
-
-          ctx.filter = "none";
-
-          if (imgPreset === "sunset") {
-            ctx.save();
-            ctx.globalCompositeOperation = "overlay";
-            ctx.fillStyle = "rgba(255, 140, 20, 0.16)";
-            ctx.fillRect(
-              layer.x,
-              layer.y,
-              imgW,
-              imgH
-            );
-            ctx.restore();
-          }
+          drawImageWithPreset(ctx, layer.img, layer.x, layer.y, imgW, imgH, imgPreset);
         }
       } else if (layer.type === "text") {
         drawTextLayerToCanvas(ctx, fontPx, fontFamily, lineHeight, maxTextWidth);
