@@ -144,6 +144,35 @@
     font-size: 13px;
   }
 
+  .deep-fry-controls {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 2px 0 6px;
+  }
+
+  .deep-fry-controls .control {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr) 36px;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .deep-fry-controls input[type="range"] {
+    width: 100%;
+    min-width: 0;
+    accent-color: #a1a1aa;
+  }
+
+  .deep-fry-val {
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: right;
+  }
+
   .control input[type="checkbox"] {
     accent-color: var(--accent);
     cursor: pointer;
@@ -2064,9 +2093,32 @@
             <option value="invert">Inverse</option>
           </select>
         </label>
-        <div id="filterIntensitySliderContainer" class="control" style="display: none;" title="Fine-tune filter intensity">
-          <input id="filterIntensityInput" type="range" min="0" max="100" step="5" value="100" title="Filter intensity" />
-          <span id="filterIntensityValue">100%</span>
+        <div id="deepFryControls" class="deep-fry-controls" title="Deep Fry filter controls">
+          <label class="control">
+            Brightness
+            <input id="deepFryBrightnessInput" type="range" min="-10" max="30" step="1" value="15" />
+            <span id="deepFryBrightnessValue" class="deep-fry-val">15</span>
+          </label>
+          <label class="control">
+            Contrast
+            <input id="deepFryContrastInput" type="range" min="0" max="300" step="1" value="155" />
+            <span id="deepFryContrastValue" class="deep-fry-val">155</span>
+          </label>
+          <label class="control">
+            Sharpen
+            <input id="deepFrySharpenInput" type="range" min="0" max="800" step="1" value="83" />
+            <span id="deepFrySharpenValue" class="deep-fry-val">83</span>
+          </label>
+          <label class="control">
+            Saturation
+            <input id="deepFrySaturationInput" type="range" min="0" max="300" step="1" value="0" />
+            <span id="deepFrySaturationValue" class="deep-fry-val">0</span>
+          </label>
+          <label class="control">
+            Noise
+            <input id="deepFryNoiseInput" type="range" min="0" max="100" step="1" value="18" />
+            <span id="deepFryNoiseValue" class="deep-fry-val">18</span>
+          </label>
         </div>
         <label class="control" title="Toggle dark edge vignette">
           <input id="vignetteToggle" type="checkbox" />
@@ -2254,6 +2306,17 @@
   const backgroundGrainOverlay = document.getElementById("backgroundGrainOverlay");
   const bgAtmosphereRow = document.getElementById("bgAtmosphereRow");
   const inspectorAtmosphereSelect = document.getElementById("inspectorAtmosphereSelect");
+  const deepFryControls = document.getElementById("deepFryControls");
+  const deepFryBrightnessInput = document.getElementById("deepFryBrightnessInput");
+  const deepFryBrightnessValue = document.getElementById("deepFryBrightnessValue");
+  const deepFryContrastInput = document.getElementById("deepFryContrastInput");
+  const deepFryContrastValue = document.getElementById("deepFryContrastValue");
+  const deepFrySharpenInput = document.getElementById("deepFrySharpenInput");
+  const deepFrySharpenValue = document.getElementById("deepFrySharpenValue");
+  const deepFrySaturationInput = document.getElementById("deepFrySaturationInput");
+  const deepFrySaturationValue = document.getElementById("deepFrySaturationValue");
+  const deepFryNoiseInput = document.getElementById("deepFryNoiseInput");
+  const deepFryNoiseValue = document.getElementById("deepFryNoiseValue");
 
   let layers = [
     {
@@ -2352,7 +2415,12 @@
     vignette: false,
     vignetteStrength: 45,
     filmGrain: false,
-    filmGrainStrength: 25
+    filmGrainStrength: 25,
+    deepFryBrightness: 15,
+    deepFryContrast: 155,
+    deepFrySharpen: 83,
+    deepFrySaturation: 0,
+    deepFryNoise: 18
   };
 
   let saveSettingsTimer = null;
@@ -2379,7 +2447,12 @@
         vignette: vignetteToggle ? vignetteToggle.checked : DEFAULT_SETTINGS.vignette,
         vignetteStrength: Number(vignetteStrengthInput ? vignetteStrengthInput.value : DEFAULT_SETTINGS.vignetteStrength) || DEFAULT_SETTINGS.vignetteStrength,
         filmGrain: filmGrainToggle ? filmGrainToggle.checked : DEFAULT_SETTINGS.filmGrain,
-        filmGrainStrength: Number(filmGrainStrengthInput ? filmGrainStrengthInput.value : DEFAULT_SETTINGS.filmGrainStrength) || DEFAULT_SETTINGS.filmGrainStrength
+        filmGrainStrength: Number(filmGrainStrengthInput ? filmGrainStrengthInput.value : DEFAULT_SETTINGS.filmGrainStrength) || DEFAULT_SETTINGS.filmGrainStrength,
+        deepFryBrightness: getDeepFrySettings().brightness,
+        deepFryContrast: getDeepFrySettings().contrast,
+        deepFrySharpen: getDeepFrySettings().sharpen,
+        deepFrySaturation: getDeepFrySettings().saturation,
+        deepFryNoise: getDeepFrySettings().noise
       };
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(current));
     } catch (err) {
@@ -2472,6 +2545,14 @@
         filmGrainStrengthInput.value = Math.max(5, Math.min(s.filmGrainStrength, 75));
         if (filmGrainStrengthValue) filmGrainStrengthValue.textContent = `${filmGrainStrengthInput.value}%`;
       }
+      applyDeepFrySettingsToInputs({
+        brightness: s.deepFryBrightness,
+        contrast: s.deepFryContrast,
+        sharpen: s.deepFrySharpen,
+        saturation: s.deepFrySaturation,
+        noise: s.deepFryNoise
+      });
+      updateDeepFryControlsVisibility();
       updateAtmosphereDom();
     } catch (err) {
       console.warn("Could not load settings from localStorage:", err);
@@ -2526,6 +2607,8 @@
       filmGrainStrengthInput.value = DEFAULT_SETTINGS.filmGrainStrength;
       if (filmGrainStrengthValue) filmGrainStrengthValue.textContent = `${DEFAULT_SETTINGS.filmGrainStrength}%`;
     }
+    applyDeepFrySettingsToInputs(DEFAULT_SETTINGS);
+    updateDeepFryControlsVisibility();
 
     document.documentElement.style.setProperty("--chat-font-size", `${DEFAULT_SETTINGS.fontSize}px`);
     document.documentElement.style.setProperty("--chat-text-padding", `${DEFAULT_SETTINGS.textPadding}px`);
@@ -2594,7 +2677,7 @@
       case "contrast":
         return "contrast(1.35) saturate(1.3) brightness(0.98)";
       case "deepfry":
-        return "contrast(2.55) brightness(1.15) saturate(1.2)";
+        return getDeepFryCssFilter();
       case "invert":
       case "cold":
         return "invert(100%)";
@@ -2612,7 +2695,7 @@
       case "contrast":
         return "contrast(135%) saturate(130%) brightness(98%)";
       case "deepfry":
-        return "contrast(255%) brightness(115%) saturate(120%)";
+        return getDeepFryCssFilter();
       case "invert":
       case "cold":
         return "invert(100%)";
@@ -2622,14 +2705,67 @@
   }
 
   const DEEP_FRY = {
-    brightness: 1.15,
-    contrast: 2.55,
-    saturate: 1.12,
-    sharpen: 0.62,
-    noise: 18,
     jpegTimes: 8,
     jpegQuality: 0.175
   };
+
+  function clampNumber(value, min, max, fallback) {
+    const n = Number(value);
+    if (Number.isNaN(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function getDeepFrySettings() {
+    return {
+      brightness: clampNumber(deepFryBrightnessInput && deepFryBrightnessInput.value, -10, 30, DEFAULT_SETTINGS.deepFryBrightness),
+      contrast: clampNumber(deepFryContrastInput && deepFryContrastInput.value, 0, 300, DEFAULT_SETTINGS.deepFryContrast),
+      sharpen: clampNumber(deepFrySharpenInput && deepFrySharpenInput.value, 0, 800, DEFAULT_SETTINGS.deepFrySharpen),
+      saturation: clampNumber(deepFrySaturationInput && deepFrySaturationInput.value, 0, 300, DEFAULT_SETTINGS.deepFrySaturation),
+      noise: clampNumber(deepFryNoiseInput && deepFryNoiseInput.value, 0, 100, DEFAULT_SETTINGS.deepFryNoise)
+    };
+  }
+
+  function applyDeepFrySettingsToInputs(settings) {
+    const brightness = clampNumber(settings.brightness ?? settings.deepFryBrightness, -10, 30, DEFAULT_SETTINGS.deepFryBrightness);
+    const contrast = clampNumber(settings.contrast ?? settings.deepFryContrast, 0, 300, DEFAULT_SETTINGS.deepFryContrast);
+    const sharpen = clampNumber(settings.sharpen ?? settings.deepFrySharpen, 0, 800, DEFAULT_SETTINGS.deepFrySharpen);
+    const saturation = clampNumber(settings.saturation ?? settings.deepFrySaturation, 0, 300, DEFAULT_SETTINGS.deepFrySaturation);
+    const noise = clampNumber(settings.noise ?? settings.deepFryNoise, 0, 100, DEFAULT_SETTINGS.deepFryNoise);
+    if (deepFryBrightnessInput) deepFryBrightnessInput.value = brightness;
+    if (deepFryContrastInput) deepFryContrastInput.value = contrast;
+    if (deepFrySharpenInput) deepFrySharpenInput.value = sharpen;
+    if (deepFrySaturationInput) deepFrySaturationInput.value = saturation;
+    if (deepFryNoiseInput) deepFryNoiseInput.value = noise;
+    updateDeepFryValueLabels();
+  }
+
+  function updateDeepFryValueLabels() {
+    const s = getDeepFrySettings();
+    if (deepFryBrightnessValue) deepFryBrightnessValue.textContent = String(s.brightness);
+    if (deepFryContrastValue) deepFryContrastValue.textContent = String(s.contrast);
+    if (deepFrySharpenValue) deepFrySharpenValue.textContent = String(s.sharpen);
+    if (deepFrySaturationValue) deepFrySaturationValue.textContent = String(s.saturation);
+    if (deepFryNoiseValue) deepFryNoiseValue.textContent = String(s.noise);
+  }
+
+  function updateDeepFryControlsVisibility() {
+    const preset = atmospherePresetSelect ? atmospherePresetSelect.value : "none";
+    if (deepFryControls) {
+      deepFryControls.style.display = preset === "deepfry" ? "flex" : "none";
+    }
+  }
+
+  function getDeepFryCssFilter() {
+    const s = getDeepFrySettings();
+    const brightness = 1 + s.brightness / 100;
+    const contrast = (100 + s.contrast) / 100;
+    const saturate = 1 + s.saturation / 100;
+    return `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
+  }
+
+  function getDeepFrySharpenAmount(sharpen) {
+    return Math.max(0, Math.min(1, sharpen / 130));
+  }
 
   let deepFrySeq = 0;
   const deepFryImageIds = new WeakMap();
@@ -2646,7 +2782,8 @@
   }
 
   function deepFryCacheKey(img, width, height) {
-    return `${getDeepFryImageId(img)}:${Math.round(width)}x${Math.round(height)}`;
+    const s = getDeepFrySettings();
+    return `${getDeepFryImageId(img)}:${Math.round(width)}x${Math.round(height)}:${s.brightness}:${s.contrast}:${s.sharpen}:${s.saturation}:${s.noise}`;
   }
 
   function clearDeepFryCache() {
@@ -2725,13 +2862,14 @@
     canvas.height = height;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-    ctx.filter = `brightness(${DEEP_FRY.brightness}) contrast(${DEEP_FRY.contrast}) saturate(${DEEP_FRY.saturate})`;
+    const fry = getDeepFrySettings();
+    ctx.filter = getDeepFryCssFilter();
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(sourceImg, 0, 0, width, height);
     ctx.filter = "none";
 
-    applySharpen(ctx, width, height, DEEP_FRY.sharpen);
-    applyNoise(ctx, width, height, DEEP_FRY.noise);
+    applySharpen(ctx, width, height, getDeepFrySharpenAmount(fry.sharpen));
+    applyNoise(ctx, width, height, fry.noise);
 
     for (let i = 0; i < DEEP_FRY.jpegTimes; i++) {
       const quality = Math.max(0.05, DEEP_FRY.jpegQuality + Math.random() * 0.025);
@@ -5451,6 +5589,7 @@
 
     renderLayersUI();
     updateDomLayers();
+    updateDeepFryControlsVisibility();
     scheduleJpegPreview();
     saveCurrentSettingsDebounced();
   }
@@ -5466,6 +5605,25 @@
       applyAtmosphereFilterChange(inspectorAtmosphereSelect.value);
     });
   }
+
+  function onDeepFrySettingInput() {
+    updateDeepFryValueLabels();
+    deepFryCache.clear();
+    updateAtmosphereDom();
+    scheduleJpegPreview();
+    saveCurrentSettingsDebounced();
+  }
+
+  [
+    deepFryBrightnessInput,
+    deepFryContrastInput,
+    deepFrySharpenInput,
+    deepFrySaturationInput,
+    deepFryNoiseInput
+  ].forEach(input => {
+    if (!input) return;
+    input.addEventListener("input", onDeepFrySettingInput);
+  });
 
   if (vignetteToggle) {
     vignetteToggle.addEventListener("change", () => {
