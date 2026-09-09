@@ -1015,7 +1015,7 @@
   }
 
   .inspector-label {
-    width: 48px;
+    width: 54px;
     font-size: 11px;
     color: #999999;
   }
@@ -1040,6 +1040,56 @@
     gap: 6px;
     flex-wrap: wrap;
     margin-top: 2px;
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .crop-handles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 70;
+    display: none;
+  }
+
+  .crop-handles.is-active {
+    display: block;
+  }
+
+  .crop-handle {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    background: #fafafa;
+    border: 1px solid #09090b;
+    border-radius: 1px;
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+    z-index: 71;
+  }
+
+  .crop-handle[data-handle="n"],
+  .crop-handle[data-handle="s"] {
+    cursor: ns-resize;
+  }
+
+  .crop-handle[data-handle="e"],
+  .crop-handle[data-handle="w"] {
+    cursor: ew-resize;
+  }
+
+  .crop-handle[data-handle="nw"],
+  .crop-handle[data-handle="se"] {
+    cursor: nwse-resize;
+  }
+
+  .crop-handle[data-handle="ne"],
+  .crop-handle[data-handle="sw"] {
+    cursor: nesw-resize;
   }
 
   .btn-xs {
@@ -1906,6 +1956,8 @@
       <button type="button" id="previewFitToggle" class="preview-fit-toggle" title="Fit the canvas in view, or show actual size">Fit</button>
     </div>
     <div class="topbar-actions">
+      <button id="undoButton" class="btn btn-neutral" type="button" title="Undo (Ctrl+Z)" disabled>Undo</button>
+      <button id="redoButton" class="btn btn-neutral" type="button" title="Redo (Ctrl+Y)" disabled>Redo</button>
       <button id="copyPngButton" class="btn btn-neutral">Copy PNG</button>
       <button id="downloadPngButton" class="btn btn-export">Save PNG</button>
     </div>
@@ -1930,6 +1982,16 @@
               <div id="preview" class="preview-box"></div>
               <img id="jpegPreviewImage" class="jpeg-preview-layer" alt="" />
               <div id="selectionBox" class="selection-box-overlay"></div>
+              <div id="cropHandles" class="crop-handles" aria-hidden="true">
+                <div class="crop-handle" data-handle="nw"></div>
+                <div class="crop-handle" data-handle="n"></div>
+                <div class="crop-handle" data-handle="ne"></div>
+                <div class="crop-handle" data-handle="e"></div>
+                <div class="crop-handle" data-handle="se"></div>
+                <div class="crop-handle" data-handle="s"></div>
+                <div class="crop-handle" data-handle="sw"></div>
+                <div class="crop-handle" data-handle="w"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -2012,6 +2074,19 @@
               <option value="deepfry">Deep Fry</option>
               <option value="invert">Inverse</option>
             </select>
+          </div>
+          <div class="inspector-row" id="layerRotateRow" style="display: none;">
+            <span class="inspector-label">Rotate</span>
+            <input type="range" id="layerRotateInput" min="0" max="360" step="1" value="0" class="inspector-slider" />
+            <span id="layerRotateValue" class="inspector-val">0°</span>
+          </div>
+          <div class="inspector-actions" id="layerTransformActions" style="display: none;">
+            <button id="layerRotateLeftBtn" class="btn btn-neutral btn-xs" type="button" title="Rotate 90° left">90° left</button>
+            <button id="layerRotateRightBtn" class="btn btn-neutral btn-xs" type="button" title="Rotate 90° right">90° right</button>
+            <button id="layerFlipHBtn" class="btn btn-neutral btn-xs" type="button" title="Flip horizontally">Flip H</button>
+            <button id="layerFlipVBtn" class="btn btn-neutral btn-xs" type="button" title="Flip vertically">Flip V</button>
+            <button id="layerCropBtn" class="btn btn-neutral btn-xs" type="button" title="Crop the selected image">Crop</button>
+            <button id="layerResetCropBtn" class="btn btn-neutral btn-xs" type="button" title="Reset crop to the full image">Reset Crop</button>
           </div>
           <div class="inspector-actions">
             <button id="layerMoveUpBtn" class="btn btn-neutral btn-xs" title="Move layer forward">Forward</button>
@@ -2171,6 +2246,11 @@
           <button id="uploadImgbbButton" class="btn btn-imgbb" title="Upload screenshot to ImgBB and copy the link">Upload ImgBB</button>
           <button id="imgbbHelpButton" class="btn-icon-help" type="button" title="How to get a free ImgBB API key">?</button>
         </div>
+        <div class="side-row">
+          <button id="saveProjectButton" class="btn btn-neutral" type="button" title="Save chatlog, layers, and settings to a project file (Ctrl+S)">Save Project</button>
+          <button id="loadProjectButton" class="btn btn-neutral" type="button" title="Load a saved project file (Ctrl+O)">Load Project</button>
+          <input id="projectFileInput" type="file" accept=".json,application/json" style="display: none;" />
+        </div>
         <button id="resetSettingsButton" type="button" class="btn btn-neutral btn-sm" title="Reset all settings to default values">Reset Settings</button>
       </section>
     </aside>
@@ -2296,6 +2376,22 @@
   const layerMoveDownBtn = document.getElementById("layerMoveDownBtn");
   const layerCenterBtn = document.getElementById("layerCenterBtn");
   const layerDeleteBtn = document.getElementById("layerDeleteBtn");
+  const layerRotateRow = document.getElementById("layerRotateRow");
+  const layerRotateInput = document.getElementById("layerRotateInput");
+  const layerRotateValue = document.getElementById("layerRotateValue");
+  const layerTransformActions = document.getElementById("layerTransformActions");
+  const layerRotateLeftBtn = document.getElementById("layerRotateLeftBtn");
+  const layerRotateRightBtn = document.getElementById("layerRotateRightBtn");
+  const layerFlipHBtn = document.getElementById("layerFlipHBtn");
+  const layerFlipVBtn = document.getElementById("layerFlipVBtn");
+  const layerCropBtn = document.getElementById("layerCropBtn");
+  const layerResetCropBtn = document.getElementById("layerResetCropBtn");
+  const cropHandles = document.getElementById("cropHandles");
+  const undoButton = document.getElementById("undoButton");
+  const redoButton = document.getElementById("redoButton");
+  const saveProjectButton = document.getElementById("saveProjectButton");
+  const loadProjectButton = document.getElementById("loadProjectButton");
+  const projectFileInput = document.getElementById("projectFileInput");
 
   const atmospherePresetSelect = document.getElementById("atmospherePresetSelect");
   const vignetteToggle = document.getElementById("vignetteToggle");
@@ -2399,6 +2495,15 @@
   let originalBgY = 0;
   let originalTextX = 0;
   let originalTextY = 0;
+  let dragDidMove = false;
+  let cropMode = false;
+  let cropDrag = null;
+
+  const HISTORY_LIMIT = 40;
+  let historyStack = [];
+  let historyIndex = -1;
+  let historyLocked = false;
+  let historyTimer = null;
 
   const SETTINGS_STORAGE_KEY = "gtarp_chatlog_magician_settings_v1";
 
@@ -2429,36 +2534,39 @@
 
   let saveSettingsTimer = null;
 
+  function collectSettings() {
+    return {
+      fontFamily: fontFamilySelect ? fontFamilySelect.value : DEFAULT_SETTINGS.fontFamily,
+      fontSize: Number(fontSize.value) || DEFAULT_SETTINGS.fontSize,
+      textPanelWidth: Number(textPanelWidthInput.value) || DEFAULT_SETTINGS.textPanelWidth,
+      textPadding: textPaddingInput ? Number(textPaddingInput.value) : DEFAULT_SETTINGS.textPadding,
+      outlineStyle: outlineStyleSelect ? outlineStyleSelect.value : DEFAULT_SETTINGS.outlineStyle,
+      strokeWidth: parseFloat(strokeWidthInput ? strokeWidthInput.value : String(DEFAULT_SETTINGS.strokeWidth)) || DEFAULT_SETTINGS.strokeWidth,
+      backgroundToggle: backgroundToggle ? backgroundToggle.checked : DEFAULT_SETTINGS.backgroundToggle,
+      censorStyle: censorStyleSelect ? censorStyleSelect.value : DEFAULT_SETTINGS.censorStyle,
+      blurStrength: parseInt(blurStrengthInput ? blurStrengthInput.value : String(DEFAULT_SETTINGS.blurStrength), 10) || DEFAULT_SETTINGS.blurStrength,
+      canvasWidth: Number(canvasWidthInput.value) || DEFAULT_SETTINGS.canvasWidth,
+      canvasHeight: Number(canvasHeightInput.value) || DEFAULT_SETTINGS.canvasHeight,
+      jpegQuality: Number(jpegQualityInput.value) || DEFAULT_SETTINGS.jpegQuality,
+      atmospherePreset: (() => {
+        const bg = layers.find(l => l.type === "background");
+        return bg && bg.filter ? bg.filter : (atmospherePresetSelect ? atmospherePresetSelect.value : DEFAULT_SETTINGS.atmospherePreset);
+      })(),
+      vignette: vignetteToggle ? vignetteToggle.checked : DEFAULT_SETTINGS.vignette,
+      vignetteStrength: Number(vignetteStrengthInput ? vignetteStrengthInput.value : DEFAULT_SETTINGS.vignetteStrength) || DEFAULT_SETTINGS.vignetteStrength,
+      filmGrain: filmGrainToggle ? filmGrainToggle.checked : DEFAULT_SETTINGS.filmGrain,
+      filmGrainStrength: Number(filmGrainStrengthInput ? filmGrainStrengthInput.value : DEFAULT_SETTINGS.filmGrainStrength) || DEFAULT_SETTINGS.filmGrainStrength,
+      deepFryBrightness: getDeepFrySettings().brightness,
+      deepFryContrast: getDeepFrySettings().contrast,
+      deepFrySharpen: getDeepFrySettings().sharpen,
+      deepFrySaturation: getDeepFrySettings().saturation,
+      deepFryNoise: getDeepFrySettings().noise
+    };
+  }
+
   function saveCurrentSettings() {
     try {
-      const current = {
-        fontFamily: fontFamilySelect ? fontFamilySelect.value : DEFAULT_SETTINGS.fontFamily,
-        fontSize: Number(fontSize.value) || DEFAULT_SETTINGS.fontSize,
-        textPanelWidth: Number(textPanelWidthInput.value) || DEFAULT_SETTINGS.textPanelWidth,
-        textPadding: textPaddingInput ? Number(textPaddingInput.value) : DEFAULT_SETTINGS.textPadding,
-        outlineStyle: outlineStyleSelect ? outlineStyleSelect.value : DEFAULT_SETTINGS.outlineStyle,
-        strokeWidth: parseFloat(strokeWidthInput ? strokeWidthInput.value : String(DEFAULT_SETTINGS.strokeWidth)) || DEFAULT_SETTINGS.strokeWidth,
-        backgroundToggle: backgroundToggle ? backgroundToggle.checked : DEFAULT_SETTINGS.backgroundToggle,
-        censorStyle: censorStyleSelect ? censorStyleSelect.value : DEFAULT_SETTINGS.censorStyle,
-        blurStrength: parseInt(blurStrengthInput ? blurStrengthInput.value : String(DEFAULT_SETTINGS.blurStrength), 10) || DEFAULT_SETTINGS.blurStrength,
-        canvasWidth: Number(canvasWidthInput.value) || DEFAULT_SETTINGS.canvasWidth,
-        canvasHeight: Number(canvasHeightInput.value) || DEFAULT_SETTINGS.canvasHeight,
-        jpegQuality: Number(jpegQualityInput.value) || DEFAULT_SETTINGS.jpegQuality,
-        atmospherePreset: (() => {
-          const bg = layers.find(l => l.type === "background");
-          return bg && bg.filter ? bg.filter : (atmospherePresetSelect ? atmospherePresetSelect.value : DEFAULT_SETTINGS.atmospherePreset);
-        })(),
-        vignette: vignetteToggle ? vignetteToggle.checked : DEFAULT_SETTINGS.vignette,
-        vignetteStrength: Number(vignetteStrengthInput ? vignetteStrengthInput.value : DEFAULT_SETTINGS.vignetteStrength) || DEFAULT_SETTINGS.vignetteStrength,
-        filmGrain: filmGrainToggle ? filmGrainToggle.checked : DEFAULT_SETTINGS.filmGrain,
-        filmGrainStrength: Number(filmGrainStrengthInput ? filmGrainStrengthInput.value : DEFAULT_SETTINGS.filmGrainStrength) || DEFAULT_SETTINGS.filmGrainStrength,
-        deepFryBrightness: getDeepFrySettings().brightness,
-        deepFryContrast: getDeepFrySettings().contrast,
-        deepFrySharpen: getDeepFrySettings().sharpen,
-        deepFrySaturation: getDeepFrySettings().saturation,
-        deepFryNoise: getDeepFrySettings().noise
-      };
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(current));
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(collectSettings()));
     } catch (err) {
       console.warn("Could not save settings to localStorage:", err);
     }
@@ -2469,6 +2577,7 @@
     saveSettingsTimer = setTimeout(() => {
       saveCurrentSettings();
     }, 250);
+    scheduleHistoryPush();
   }
 
   function loadAndApplySavedSettings() {
@@ -2476,91 +2585,93 @@
       const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object") return;
-
-      // Safe schema merge: any missing or new settings safely fall back to DEFAULT_SETTINGS,
-      // and any deleted/obsolete setting from prior versions is safely ignored without breaking.
-      const s = { ...DEFAULT_SETTINGS, ...parsed };
-
-      if (fontFamilySelect && typeof s.fontFamily === "string") {
-        fontFamilySelect.value = normalizeFontFamilyValue(s.fontFamily);
-      }
-      if (fontSize && typeof s.fontSize === "number" && !isNaN(s.fontSize)) {
-        fontSize.value = Math.max(8, Math.min(s.fontSize, 72));
-      }
-      if (textPanelWidthInput && typeof s.textPanelWidth === "number" && !isNaN(s.textPanelWidth)) {
-        textPanelWidthInput.value = Math.max(50, Math.min(s.textPanelWidth, 4000));
-      }
-      if (textPaddingInput && typeof s.textPadding === "number" && !isNaN(s.textPadding)) {
-        textPaddingInput.value = Math.max(0, Math.min(s.textPadding, 80));
-      }
-      if (outlineStyleSelect && typeof s.outlineStyle === "string") {
-        outlineStyleSelect.value = s.outlineStyle;
-      }
-      if (strokeWidthInput && typeof s.strokeWidth === "number" && !isNaN(s.strokeWidth)) {
-        strokeWidthInput.value = Math.max(0.5, Math.min(s.strokeWidth, 10));
-      }
-      if (backgroundToggle && typeof s.backgroundToggle === "boolean") {
-        backgroundToggle.checked = s.backgroundToggle;
-      }
-      if (censorStyleSelect && typeof s.censorStyle === "string") {
-        censorStyleSelect.value = s.censorStyle;
-      }
-      if (blurStrengthInput && typeof s.blurStrength === "number" && !isNaN(s.blurStrength)) {
-        blurStrengthInput.value = Math.max(1, Math.min(s.blurStrength, 20));
-        if (blurStrengthValue) blurStrengthValue.textContent = `${blurStrengthInput.value}px`;
-      }
-      if (canvasWidthInput && typeof s.canvasWidth === "number" && !isNaN(s.canvasWidth)) {
-        canvasWidthInput.value = Math.max(100, Math.min(s.canvasWidth, 4000));
-      }
-      if (canvasHeightInput && typeof s.canvasHeight === "number" && !isNaN(s.canvasHeight)) {
-        canvasHeightInput.value = Math.max(100, Math.min(s.canvasHeight, 4000));
-      }
-      if (jpegQualityInput && typeof s.jpegQuality === "number" && !isNaN(s.jpegQuality)) {
-        jpegQualityInput.value = Math.max(0.05, Math.min(s.jpegQuality, 1));
-        if (jpegQualityValue) {
-          jpegQualityValue.textContent = Math.round(jpegQualityInput.value * 100) + "%";
-        }
-      }
-      if (typeof s.atmospherePreset === "string") {
-        const mappedPreset = s.atmospherePreset === "cold" ? "invert" : s.atmospherePreset;
-        const bgLayer = layers.find(l => l.type === "background");
-        if (bgLayer) bgLayer.filter = mappedPreset;
-        if (atmospherePresetSelect) atmospherePresetSelect.value = mappedPreset;
-        if (inspectorAtmosphereSelect) inspectorAtmosphereSelect.value = mappedPreset;
-      }
-      if (vignetteToggle && typeof s.vignette === "boolean") {
-        vignetteToggle.checked = s.vignette;
-        if (vignetteSliderContainer) {
-          vignetteSliderContainer.style.display = s.vignette ? "flex" : "none";
-        }
-      }
-      if (vignetteStrengthInput && typeof s.vignetteStrength === "number") {
-        vignetteStrengthInput.value = Math.max(10, Math.min(s.vignetteStrength, 100));
-        if (vignetteStrengthValue) vignetteStrengthValue.textContent = `${vignetteStrengthInput.value}%`;
-      }
-      if (filmGrainToggle && typeof s.filmGrain === "boolean") {
-        filmGrainToggle.checked = s.filmGrain;
-        if (filmGrainSliderContainer) {
-          filmGrainSliderContainer.style.display = s.filmGrain ? "flex" : "none";
-        }
-      }
-      if (filmGrainStrengthInput && typeof s.filmGrainStrength === "number") {
-        filmGrainStrengthInput.value = Math.max(5, Math.min(s.filmGrainStrength, 75));
-        if (filmGrainStrengthValue) filmGrainStrengthValue.textContent = `${filmGrainStrengthInput.value}%`;
-      }
-      applyDeepFrySettingsToInputs({
-        brightness: s.deepFryBrightness,
-        contrast: s.deepFryContrast,
-        sharpen: s.deepFrySharpen,
-        saturation: s.deepFrySaturation,
-        noise: s.deepFryNoise
-      });
-      updateDeepFryControlsVisibility();
-      updateAtmosphereDom();
+      applySettingsObject(parsed);
     } catch (err) {
       console.warn("Could not load settings from localStorage:", err);
     }
+  }
+
+  function applySettingsObject(parsed) {
+    if (!parsed || typeof parsed !== "object") return;
+
+    const s = { ...DEFAULT_SETTINGS, ...parsed };
+
+    if (fontFamilySelect && typeof s.fontFamily === "string") {
+      fontFamilySelect.value = normalizeFontFamilyValue(s.fontFamily);
+    }
+    if (fontSize && typeof s.fontSize === "number" && !isNaN(s.fontSize)) {
+      fontSize.value = Math.max(8, Math.min(s.fontSize, 72));
+    }
+    if (textPanelWidthInput && typeof s.textPanelWidth === "number" && !isNaN(s.textPanelWidth)) {
+      textPanelWidthInput.value = Math.max(50, Math.min(s.textPanelWidth, 4000));
+    }
+    if (textPaddingInput && typeof s.textPadding === "number" && !isNaN(s.textPadding)) {
+      textPaddingInput.value = Math.max(0, Math.min(s.textPadding, 80));
+    }
+    if (outlineStyleSelect && typeof s.outlineStyle === "string") {
+      outlineStyleSelect.value = s.outlineStyle;
+    }
+    if (strokeWidthInput && typeof s.strokeWidth === "number" && !isNaN(s.strokeWidth)) {
+      strokeWidthInput.value = Math.max(0.5, Math.min(s.strokeWidth, 10));
+    }
+    if (backgroundToggle && typeof s.backgroundToggle === "boolean") {
+      backgroundToggle.checked = s.backgroundToggle;
+    }
+    if (censorStyleSelect && typeof s.censorStyle === "string") {
+      censorStyleSelect.value = s.censorStyle;
+    }
+    if (blurStrengthInput && typeof s.blurStrength === "number" && !isNaN(s.blurStrength)) {
+      blurStrengthInput.value = Math.max(1, Math.min(s.blurStrength, 20));
+      if (blurStrengthValue) blurStrengthValue.textContent = `${blurStrengthInput.value}px`;
+    }
+    if (canvasWidthInput && typeof s.canvasWidth === "number" && !isNaN(s.canvasWidth)) {
+      canvasWidthInput.value = Math.max(100, Math.min(s.canvasWidth, 4000));
+    }
+    if (canvasHeightInput && typeof s.canvasHeight === "number" && !isNaN(s.canvasHeight)) {
+      canvasHeightInput.value = Math.max(100, Math.min(s.canvasHeight, 4000));
+    }
+    if (jpegQualityInput && typeof s.jpegQuality === "number" && !isNaN(s.jpegQuality)) {
+      jpegQualityInput.value = Math.max(0.05, Math.min(s.jpegQuality, 1));
+      if (jpegQualityValue) {
+        jpegQualityValue.textContent = Math.round(jpegQualityInput.value * 100) + "%";
+      }
+    }
+    if (typeof s.atmospherePreset === "string") {
+      const mappedPreset = s.atmospherePreset === "cold" ? "invert" : s.atmospherePreset;
+      const bgLayer = layers.find(l => l.type === "background");
+      if (bgLayer) bgLayer.filter = mappedPreset;
+      if (atmospherePresetSelect) atmospherePresetSelect.value = mappedPreset;
+      if (inspectorAtmosphereSelect) inspectorAtmosphereSelect.value = mappedPreset;
+    }
+    if (vignetteToggle && typeof s.vignette === "boolean") {
+      vignetteToggle.checked = s.vignette;
+      if (vignetteSliderContainer) {
+        vignetteSliderContainer.style.display = s.vignette ? "flex" : "none";
+      }
+    }
+    if (vignetteStrengthInput && typeof s.vignetteStrength === "number") {
+      vignetteStrengthInput.value = Math.max(10, Math.min(s.vignetteStrength, 100));
+      if (vignetteStrengthValue) vignetteStrengthValue.textContent = `${vignetteStrengthInput.value}%`;
+    }
+    if (filmGrainToggle && typeof s.filmGrain === "boolean") {
+      filmGrainToggle.checked = s.filmGrain;
+      if (filmGrainSliderContainer) {
+        filmGrainSliderContainer.style.display = s.filmGrain ? "flex" : "none";
+      }
+    }
+    if (filmGrainStrengthInput && typeof s.filmGrainStrength === "number") {
+      filmGrainStrengthInput.value = Math.max(5, Math.min(s.filmGrainStrength, 75));
+      if (filmGrainStrengthValue) filmGrainStrengthValue.textContent = `${filmGrainStrengthInput.value}%`;
+    }
+    applyDeepFrySettingsToInputs({
+      brightness: s.deepFryBrightness,
+      contrast: s.deepFryContrast,
+      sharpen: s.deepFrySharpen,
+      saturation: s.deepFrySaturation,
+      noise: s.deepFryNoise
+    });
+    updateDeepFryControlsVisibility();
+    updateAtmosphereDom();
   }
 
   function resetSettingsToDefault() {
@@ -2627,6 +2738,7 @@
     render();
 
     showToast("success", "Settings Reset", "All settings have been restored to their original defaults.");
+    pushHistory();
   }
 
   function getSelectedImageOrBackgroundLayer() {
@@ -2928,9 +3040,12 @@
     return null;
   }
 
-  function drawImageWithPreset(ctx, img, x, y, w, h, preset) {
+  function drawImageWithPreset(ctx, img, x, y, w, h, preset, srcRect = null) {
+    const src = srcRect || (img && img.naturalWidth ? { sx: 0, sy: 0, sw: img.naturalWidth, sh: img.naturalHeight } : null);
+
     if (preset === "deepfry") {
-      const fried = getDeepFriedSource(img, w, h);
+      const sourceImage = src ? getCroppedFilterSource(img, src) : img;
+      const fried = getDeepFriedSource(sourceImage, w, h);
       if (fried) {
         ctx.drawImage(fried, x, y, w, h);
         return;
@@ -2941,7 +3056,11 @@
     if (filterStr && filterStr !== "none") {
       ctx.filter = filterStr;
     }
-    ctx.drawImage(img, x, y, w, h);
+    if (src) {
+      ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, x, y, w, h);
+    } else {
+      ctx.drawImage(img, x, y, w, h);
+    }
     ctx.filter = "none";
 
     if (preset === "sunset") {
@@ -3238,6 +3357,7 @@
     }
     input.focus();
     render();
+    pushHistory();
   }
 
   function setChatColorInputs(hex, fromPreset = false) {
@@ -3342,6 +3462,7 @@
     input.focus();
     render();
     syncColorPickerFromSelection();
+    pushHistory();
   }
 
   function loadBackgroundImageFile(file) {
@@ -3364,10 +3485,18 @@
           getCanvasWidth() / bgImageObject.naturalWidth,
           getCanvasHeight() / bgImageObject.naturalHeight
         );
+        const bgLayer = layers.find(l => l.type === "background");
+        if (bgLayer) {
+          bgLayer.rotation = 0;
+          bgLayer.flipX = false;
+          bgLayer.flipY = false;
+          bgLayer.crop = null;
+        }
 
         updateBackgroundTransform();
         renderLayersUI();
         updateDomLayers();
+        pushHistory();
       };
 
       bgImageObject.src = bgImageDataUrl;
@@ -3420,7 +3549,18 @@
   }
 
   function updateBackgroundTransform() {
-    backgroundImage.style.transform = `translate(${bgX}px, ${bgY}px) scale(${bgScale})`;
+    const bgLayer = layers.find(l => l.type === "background");
+    const metrics = bgLayer ? getImageLayerMetrics(bgLayer) : null;
+    if (backgroundImage && metrics) {
+      backgroundImage.style.width = metrics.img.naturalWidth + "px";
+      backgroundImage.style.height = metrics.img.naturalHeight + "px";
+      backgroundImage.style.transformOrigin = "top left";
+      const cropX = metrics.src.sx * metrics.scale;
+      const cropY = metrics.src.sy * metrics.scale;
+      backgroundImage.style.transform = `translate(${metrics.x - cropX}px, ${metrics.y - cropY}px) rotate(${metrics.rotation}deg) scale(${metrics.flipX ? -metrics.scale : metrics.scale}, ${metrics.flipY ? -metrics.scale : metrics.scale})`;
+    } else if (backgroundImage) {
+      backgroundImage.style.transform = `translate(${bgX}px, ${bgY}px) scale(${bgScale})`;
+    }
     scheduleJpegPreview();
   }
 
@@ -3463,6 +3603,593 @@
     return layers.find(l => l.id === selectedLayerId) || layers[layers.length - 1];
   }
 
+  function cloneCropRect(crop) {
+    if (!crop) return null;
+    return {
+      x: Number(crop.x) || 0,
+      y: Number(crop.y) || 0,
+      w: Number(crop.w) || 0,
+      h: Number(crop.h) || 0
+    };
+  }
+
+  function getSourceRect(img, crop) {
+    const nw = img && img.naturalWidth ? img.naturalWidth : 0;
+    const nh = img && img.naturalHeight ? img.naturalHeight : 0;
+    if (!nw || !nh) return { sx: 0, sy: 0, sw: 1, sh: 1 };
+    if (!crop) return { sx: 0, sy: 0, sw: nw, sh: nh };
+    let sx = Math.round(Number(crop.x) || 0);
+    let sy = Math.round(Number(crop.y) || 0);
+    let sw = Math.round(Number(crop.w) || nw);
+    let sh = Math.round(Number(crop.h) || nh);
+    sx = Math.max(0, Math.min(sx, nw - 1));
+    sy = Math.max(0, Math.min(sy, nh - 1));
+    sw = Math.max(1, Math.min(sw, nw - sx));
+    sh = Math.max(1, Math.min(sh, nh - sy));
+    return { sx, sy, sw, sh };
+  }
+
+  function getLayerImage(layer) {
+    if (!layer) return null;
+    if (layer.type === "background") return bgImageObject;
+    if (layer.type === "image") return layer.img || null;
+    return null;
+  }
+
+  function getLayerPosition(layer) {
+    if (layer.type === "background") return { x: bgX, y: bgY };
+    return { x: Number(layer.x) || 0, y: Number(layer.y) || 0 };
+  }
+
+  function setLayerPosition(layer, x, y) {
+    if (layer.type === "background") {
+      bgX = x;
+      bgY = y;
+    } else {
+      layer.x = x;
+      layer.y = y;
+    }
+  }
+
+  function getLayerScaleValue(layer) {
+    if (layer.type === "background") return bgScale || 1;
+    return layer.scale || 1;
+  }
+
+  function ensureLayerTransforms(layer) {
+    if (!layer || (layer.type !== "image" && layer.type !== "background")) return layer;
+    if (typeof layer.rotation !== "number" || Number.isNaN(layer.rotation)) layer.rotation = 0;
+    layer.rotation = ((layer.rotation % 360) + 360) % 360;
+    layer.flipX = Boolean(layer.flipX);
+    layer.flipY = Boolean(layer.flipY);
+    if (layer.crop && (layer.crop.w <= 0 || layer.crop.h <= 0)) layer.crop = null;
+    return layer;
+  }
+
+  function getImageLayerMetrics(layer) {
+    if (!layer || (layer.type !== "image" && layer.type !== "background")) return null;
+    ensureLayerTransforms(layer);
+    const img = getLayerImage(layer);
+    if (!img || !img.naturalWidth) return null;
+    const src = getSourceRect(img, layer.crop);
+    const scale = getLayerScaleValue(layer);
+    const pos = getLayerPosition(layer);
+    const w = src.sw * scale;
+    const h = src.sh * scale;
+    return {
+      layer,
+      img,
+      src,
+      scale,
+      x: pos.x,
+      y: pos.y,
+      w,
+      h,
+      cx: pos.x + w / 2,
+      cy: pos.y + h / 2,
+      rotation: layer.rotation || 0,
+      flipX: Boolean(layer.flipX),
+      flipY: Boolean(layer.flipY)
+    };
+  }
+
+  function localToCanvas(localX, localY, metrics) {
+    let px = localX - metrics.w / 2;
+    let py = localY - metrics.h / 2;
+    if (metrics.flipX) px = -px;
+    if (metrics.flipY) py = -py;
+    const rad = (metrics.rotation || 0) * Math.PI / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    return {
+      x: metrics.cx + px * cos - py * sin,
+      y: metrics.cy + px * sin + py * cos
+    };
+  }
+
+  function canvasToLocal(canvasX, canvasY, metrics) {
+    const dx = canvasX - metrics.cx;
+    const dy = canvasY - metrics.cy;
+    const rad = -(metrics.rotation || 0) * Math.PI / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    let lx = dx * cos - dy * sin;
+    let ly = dx * sin + dy * cos;
+    if (metrics.flipX) lx = -lx;
+    if (metrics.flipY) ly = -ly;
+    return {
+      x: lx + metrics.w / 2,
+      y: ly + metrics.h / 2
+    };
+  }
+
+  function getRotatedAABB(metrics) {
+    const corners = [
+      localToCanvas(0, 0, metrics),
+      localToCanvas(metrics.w, 0, metrics),
+      localToCanvas(metrics.w, metrics.h, metrics),
+      localToCanvas(0, metrics.h, metrics)
+    ];
+    const xs = corners.map(c => c.x);
+    const ys = corners.map(c => c.y);
+    const x = Math.min(...xs);
+    const y = Math.min(...ys);
+    return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+  }
+
+  function pointInImageLayer(metrics, px, py) {
+    if (!metrics) return false;
+    const local = canvasToLocal(px, py, metrics);
+    return local.x >= 0 && local.x <= metrics.w && local.y >= 0 && local.y <= metrics.h;
+  }
+
+  function getCroppedFilterSource(img, src) {
+    if (!img || !src) return img;
+    if (src.sx === 0 && src.sy === 0 && src.sw === img.naturalWidth && src.sh === img.naturalHeight) {
+      return img;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, src.sw);
+    canvas.height = Math.max(1, src.sh);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, 0, 0, src.sw, src.sh);
+    return canvas;
+  }
+
+  function drawTransformedLayerImage(ctx, layer, preset) {
+    const metrics = getImageLayerMetrics(layer);
+    if (!metrics) return;
+    ctx.save();
+    ctx.translate(metrics.cx, metrics.cy);
+    ctx.rotate((metrics.rotation || 0) * Math.PI / 180);
+    ctx.scale(metrics.flipX ? -1 : 1, metrics.flipY ? -1 : 1);
+    drawImageWithPreset(ctx, metrics.img, -metrics.w / 2, -metrics.h / 2, metrics.w, metrics.h, preset, metrics.src);
+    ctx.restore();
+  }
+
+  function captureHistoryState() {
+    return {
+      chatlog: input ? input.value : "",
+      settings: collectSettings(),
+      textOffsetX,
+      textOffsetY,
+      bgX,
+      bgY,
+      bgScale,
+      bgImageDataUrl,
+      selectedLayerId,
+      layerIdCounter,
+      layers: layers.map(layer => ({
+        id: layer.id,
+        type: layer.type,
+        name: layer.name,
+        visible: layer.visible !== false,
+        opacity: typeof layer.opacity === "number" ? layer.opacity : 1,
+        filter: layer.filter || "none",
+        scale: layer.scale,
+        x: layer.x,
+        y: layer.y,
+        dataUrl: layer.dataUrl || "",
+        width: layer.width,
+        height: layer.height,
+        rotation: layer.rotation || 0,
+        flipX: Boolean(layer.flipX),
+        flipY: Boolean(layer.flipY),
+        crop: cloneCropRect(layer.crop)
+      }))
+    };
+  }
+
+  function snapshotsLookSame(a, b) {
+    if (!a || !b) return false;
+    if (a.chatlog !== b.chatlog) return false;
+    if (a.bgImageDataUrl !== b.bgImageDataUrl) return false;
+    if (a.bgX !== b.bgX || a.bgY !== b.bgY || a.bgScale !== b.bgScale) return false;
+    if (a.textOffsetX !== b.textOffsetX || a.textOffsetY !== b.textOffsetY) return false;
+    if (a.selectedLayerId !== b.selectedLayerId) return false;
+    if (!a.layers || !b.layers || a.layers.length !== b.layers.length) return false;
+    if (JSON.stringify(a.settings) !== JSON.stringify(b.settings)) return false;
+    return a.layers.every((layer, index) => {
+      const other = b.layers[index];
+      return layer.id === other.id
+        && layer.type === other.type
+        && layer.visible === other.visible
+        && layer.opacity === other.opacity
+        && layer.filter === other.filter
+        && layer.scale === other.scale
+        && layer.x === other.x
+        && layer.y === other.y
+        && layer.dataUrl === other.dataUrl
+        && layer.rotation === other.rotation
+        && layer.flipX === other.flipX
+        && layer.flipY === other.flipY
+        && JSON.stringify(layer.crop) === JSON.stringify(other.crop);
+    });
+  }
+
+  function updateUndoRedoButtons() {
+    if (undoButton) undoButton.disabled = historyIndex <= 0;
+    if (redoButton) redoButton.disabled = historyIndex < 0 || historyIndex >= historyStack.length - 1;
+  }
+
+  function pushHistory() {
+    if (historyLocked) return;
+    const snapshot = captureHistoryState();
+    if (historyIndex >= 0 && snapshotsLookSame(historyStack[historyIndex], snapshot)) {
+      updateUndoRedoButtons();
+      return;
+    }
+    historyStack = historyStack.slice(0, historyIndex + 1);
+    historyStack.push(snapshot);
+    if (historyStack.length > HISTORY_LIMIT) {
+      historyStack.shift();
+    }
+    historyIndex = historyStack.length - 1;
+    updateUndoRedoButtons();
+  }
+
+  function scheduleHistoryPush() {
+    if (historyLocked) return;
+    if (historyTimer) clearTimeout(historyTimer);
+    historyTimer = setTimeout(() => {
+      historyTimer = null;
+      pushHistory();
+    }, 400);
+  }
+
+  function loadImageFromDataUrl(dataUrl) {
+    return new Promise((resolve, reject) => {
+      if (!dataUrl) {
+        resolve(null);
+        return;
+      }
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Could not load image data."));
+      img.src = dataUrl;
+    });
+  }
+
+  async function restoreHistoryState(snapshot) {
+    if (!snapshot) return;
+    historyLocked = true;
+    cropMode = false;
+    try {
+      if (input) input.value = snapshot.chatlog || "";
+      bgX = Number(snapshot.bgX) || 0;
+      bgY = Number(snapshot.bgY) || 0;
+      bgScale = Number(snapshot.bgScale) || 1;
+      bgImageDataUrl = snapshot.bgImageDataUrl || "";
+      textOffsetX = Number(snapshot.textOffsetX);
+      textOffsetY = Number(snapshot.textOffsetY);
+      if (Number.isNaN(textOffsetX)) textOffsetX = DEFAULT_TEXT_OFFSET_X;
+      if (Number.isNaN(textOffsetY)) textOffsetY = DEFAULT_TEXT_OFFSET_Y;
+      selectedLayerId = snapshot.selectedLayerId || "layer-text";
+      layerIdCounter = Number(snapshot.layerIdCounter) || 0;
+
+      layers = (snapshot.layers || []).map(layer => ensureLayerTransforms({ ...layer, img: null }));
+      applySettingsObject(snapshot.settings || {});
+
+      if (bgImageDataUrl) {
+        backgroundImage.src = bgImageDataUrl;
+        bgImageObject = await loadImageFromDataUrl(bgImageDataUrl);
+      } else {
+        backgroundImage.src = "";
+        bgImageObject = null;
+      }
+
+      for (const layer of layers) {
+        if (layer.type === "image" && layer.dataUrl) {
+          layer.img = await loadImageFromDataUrl(layer.dataUrl);
+        }
+      }
+
+      document.documentElement.style.setProperty("--chat-font-size", `${Number(fontSize.value) || 14}px`);
+      document.documentElement.style.setProperty("--chat-text-padding", `${getTextPadding()}px`);
+      preview.classList.toggle("no-text-background", !backgroundToggle.checked);
+      updateTextPanelWidth();
+      updateCanvasStageSize();
+      updateFontFamily();
+      updateOutlineSettings();
+      updateCensorSettings();
+      updateAtmosphereDom();
+      updateDeepFryControlsVisibility();
+      render();
+      renderLayersUI();
+      updateDomLayers();
+      updateBackgroundTransform();
+      scheduleJpegPreview();
+      saveCurrentSettings();
+    } finally {
+      historyLocked = false;
+      updateUndoRedoButtons();
+      updateCropHandles();
+    }
+  }
+
+  async function undoHistory() {
+    if (historyIndex <= 0) return;
+    historyIndex -= 1;
+    await restoreHistoryState(historyStack[historyIndex]);
+  }
+
+  async function redoHistory() {
+    if (historyIndex >= historyStack.length - 1) return;
+    historyIndex += 1;
+    await restoreHistoryState(historyStack[historyIndex]);
+  }
+
+  function serializeProject() {
+    const state = captureHistoryState();
+    return {
+      format: "chatlog-magician",
+      version: 1,
+      savedAt: new Date().toISOString(),
+      ...state
+    };
+  }
+
+  function saveProjectToFile() {
+    try {
+      const blob = new Blob([JSON.stringify(serializeProject())], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      link.download = `chatlog-magician-${stamp}.json`;
+      link.href = url;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast("success", "Project Saved", "Chatlog, layers, and settings were downloaded as a project file.");
+    } catch (err) {
+      console.error("Failed to save project:", err);
+      showToast("error", "Save Failed", err?.message || "Could not save the project file.");
+    }
+  }
+
+  async function loadProjectObject(project) {
+    if (!project || project.format !== "chatlog-magician") {
+      throw new Error("That file is not a Chatlog Magician project.");
+    }
+    historyLocked = true;
+    await restoreHistoryState(project);
+    historyLocked = false;
+    historyStack = [captureHistoryState()];
+    historyIndex = 0;
+    updateUndoRedoButtons();
+  }
+
+  function loadProjectFromFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const parsed = JSON.parse(String(reader.result || ""));
+        await loadProjectObject(parsed);
+        showToast("success", "Project Loaded", file.name || "The project was restored.");
+      } catch (err) {
+        console.error("Failed to load project:", err);
+        showToast("error", "Load Failed", err?.message || "Could not read that project file.");
+      }
+    };
+    reader.onerror = () => {
+      showToast("error", "Load Failed", "Could not read that project file.");
+    };
+    reader.readAsText(file);
+  }
+
+  function rotateLayerBy(layer, degrees) {
+    if (!layer || (layer.type !== "image" && layer.type !== "background")) return;
+    const before = getImageLayerMetrics(layer);
+    ensureLayerTransforms(layer);
+    layer.rotation = ((layer.rotation + degrees) % 360 + 360) % 360;
+    if (before) {
+      const after = getImageLayerMetrics(layer);
+      if (after) {
+        setLayerPosition(layer, getLayerPosition(layer).x + (before.cx - after.cx), getLayerPosition(layer).y + (before.cy - after.cy));
+      }
+    }
+    refreshLayerView();
+    pushHistory();
+  }
+
+  function flipLayer(layer, axis) {
+    if (!layer || (layer.type !== "image" && layer.type !== "background")) return;
+    ensureLayerTransforms(layer);
+    if (axis === "h") layer.flipX = !layer.flipX;
+    if (axis === "v") layer.flipY = !layer.flipY;
+    refreshLayerView();
+    pushHistory();
+  }
+
+  function setLayerRotation(layer, degrees, recordHistory) {
+    if (!layer || (layer.type !== "image" && layer.type !== "background")) return;
+    const before = getImageLayerMetrics(layer);
+    ensureLayerTransforms(layer);
+    layer.rotation = ((Number(degrees) % 360) + 360) % 360;
+    if (before) {
+      const after = getImageLayerMetrics(layer);
+      if (after) {
+        setLayerPosition(layer, getLayerPosition(layer).x + (before.cx - after.cx), getLayerPosition(layer).y + (before.cy - after.cy));
+      }
+    }
+    updateDomLayers();
+    updateBackgroundTransform();
+    updateCropHandles();
+    scheduleJpegPreview();
+    if (recordHistory) pushHistory();
+  }
+
+  function refreshLayerView() {
+    renderLayersUI();
+    updateDomLayers();
+    updateBackgroundTransform();
+    updateCropHandles();
+    scheduleJpegPreview();
+  }
+
+  function isCroppableLayer(layer) {
+    return Boolean(layer && (layer.type === "image" || layer.type === "background") && getLayerImage(layer));
+  }
+
+  function beginCropMode(layer) {
+    if (!isCroppableLayer(layer)) return;
+    const img = getLayerImage(layer);
+    if (!layer.crop) {
+      layer.crop = { x: 0, y: 0, w: img.naturalWidth, h: img.naturalHeight };
+    }
+    cropMode = true;
+    selectedLayerId = layer.id;
+    refreshLayerView();
+  }
+
+  function endCropMode() {
+    cropMode = false;
+    cropDrag = null;
+    updateCropHandles();
+    updateInspectorUI();
+  }
+
+  function resetLayerCrop(layer) {
+    if (!isCroppableLayer(layer)) return;
+    layer.crop = null;
+    endCropMode();
+    refreshLayerView();
+    pushHistory();
+  }
+
+  function updateCropHandles() {
+    if (!cropHandles) return;
+    const layer = getSelectedLayer();
+    const metrics = cropMode && isCroppableLayer(layer) ? getImageLayerMetrics(layer) : null;
+    if (!metrics) {
+      cropHandles.classList.remove("is-active");
+      cropHandles.setAttribute("aria-hidden", "true");
+      return;
+    }
+
+    cropHandles.classList.add("is-active");
+    cropHandles.setAttribute("aria-hidden", "false");
+    const positions = {
+      nw: localToCanvas(0, 0, metrics),
+      n: localToCanvas(metrics.w / 2, 0, metrics),
+      ne: localToCanvas(metrics.w, 0, metrics),
+      e: localToCanvas(metrics.w, metrics.h / 2, metrics),
+      se: localToCanvas(metrics.w, metrics.h, metrics),
+      s: localToCanvas(metrics.w / 2, metrics.h, metrics),
+      sw: localToCanvas(0, metrics.h, metrics),
+      w: localToCanvas(0, metrics.h / 2, metrics)
+    };
+    cropHandles.querySelectorAll(".crop-handle").forEach(handle => {
+      const key = handle.getAttribute("data-handle");
+      const pt = positions[key];
+      if (!pt) return;
+      handle.style.left = pt.x + "px";
+      handle.style.top = pt.y + "px";
+    });
+  }
+
+  function applyCropHandleDrag(point) {
+    if (!cropDrag || !cropDrag.layer) return;
+    const layer = cropDrag.layer;
+    const img = getLayerImage(layer);
+    if (!img) return;
+
+    const local = canvasToLocal(point.x, point.y, cropDrag.metrics);
+    const src = cropDrag.src;
+    const scale = cropDrag.metrics.scale || 1;
+    let left = src.sx;
+    let top = src.sy;
+    let right = src.sx + src.sw;
+    let bottom = src.sy + src.sh;
+    const srcX = src.sx + local.x / scale;
+    const srcY = src.sy + local.y / scale;
+    const handle = cropDrag.handle;
+    const minSize = 8;
+
+    if (handle.includes("w")) left = srcX;
+    if (handle.includes("e")) right = srcX;
+    if (handle.includes("n")) top = srcY;
+    if (handle.includes("s")) bottom = srcY;
+
+    left = Math.max(0, Math.min(left, img.naturalWidth - minSize));
+    top = Math.max(0, Math.min(top, img.naturalHeight - minSize));
+    right = Math.max(minSize, Math.min(right, img.naturalWidth));
+    bottom = Math.max(minSize, Math.min(bottom, img.naturalHeight));
+    if (right - left < minSize) {
+      if (handle.includes("w")) left = right - minSize;
+      else right = left + minSize;
+    }
+    if (bottom - top < minSize) {
+      if (handle.includes("n")) top = bottom - minSize;
+      else bottom = top + minSize;
+    }
+
+    const nextCrop = {
+      x: Math.round(left),
+      y: Math.round(top),
+      w: Math.round(right - left),
+      h: Math.round(bottom - top)
+    };
+
+    const anchorLocal = {
+      nw: { x: cropDrag.metrics.w, y: cropDrag.metrics.h },
+      n: { x: cropDrag.metrics.w / 2, y: cropDrag.metrics.h },
+      ne: { x: 0, y: cropDrag.metrics.h },
+      e: { x: 0, y: cropDrag.metrics.h / 2 },
+      se: { x: 0, y: 0 },
+      s: { x: cropDrag.metrics.w / 2, y: 0 },
+      sw: { x: cropDrag.metrics.w, y: 0 },
+      w: { x: cropDrag.metrics.w, y: cropDrag.metrics.h / 2 }
+    }[handle] || { x: 0, y: 0 };
+    const anchorCanvas = localToCanvas(anchorLocal.x, anchorLocal.y, cropDrag.metrics);
+
+    layer.crop = nextCrop;
+    const nextMetrics = getImageLayerMetrics(layer);
+    if (nextMetrics) {
+      const nextAnchorLocal = {
+        nw: { x: nextMetrics.w, y: nextMetrics.h },
+        n: { x: nextMetrics.w / 2, y: nextMetrics.h },
+        ne: { x: 0, y: nextMetrics.h },
+        e: { x: 0, y: nextMetrics.h / 2 },
+        se: { x: 0, y: 0 },
+        s: { x: nextMetrics.w / 2, y: 0 },
+        sw: { x: nextMetrics.w, y: 0 },
+        w: { x: nextMetrics.w, y: nextMetrics.h / 2 }
+      }[handle] || { x: 0, y: 0 };
+      const nextAnchor = localToCanvas(nextAnchorLocal.x, nextAnchorLocal.y, nextMetrics);
+      setLayerPosition(
+        layer,
+        getLayerPosition(layer).x + (anchorCanvas.x - nextAnchor.x),
+        getLayerPosition(layer).y + (anchorCanvas.y - nextAnchor.y)
+      );
+    }
+
+    updateDomLayers();
+    updateBackgroundTransform();
+    updateCropHandles();
+    scheduleJpegPreview();
+  }
+
   function addOverlayImageLayerFromFile(file) {
     if (!file || !file.type.startsWith("image/")) return;
 
@@ -3502,7 +4229,11 @@
           dataUrl: dataUrl,
           width: img.naturalWidth,
           height: img.naturalHeight,
-          filter: "none"
+          filter: "none",
+          rotation: 0,
+          flipX: false,
+          flipY: false,
+          crop: null
         };
 
         layers.push(newLayer);
@@ -3511,6 +4242,7 @@
         renderLayersUI();
         updateDomLayers();
         scheduleJpegPreview();
+        pushHistory();
       };
       img.src = dataUrl;
     };
@@ -3553,6 +4285,7 @@
         renderLayersUI();
         updateDomLayers();
         scheduleJpegPreview();
+        pushHistory();
       });
 
       // Thumbnail
@@ -3642,6 +4375,9 @@
       }
 
       item.addEventListener("click", () => {
+        if (cropMode && layer.id !== selectedLayerId) {
+          endCropMode();
+        }
         selectedLayerId = layer.id;
         renderLayersUI();
         updateDomLayers();
@@ -3668,6 +4404,17 @@
     const layerIdx = layers.findIndex(l => l.id === layer.id);
     if (layerMoveUpBtn) layerMoveUpBtn.disabled = layerIdx === layers.length - 1;
     if (layerMoveDownBtn) layerMoveDownBtn.disabled = layerIdx === 0;
+
+    const isImageLayer = (layer.type === "image" || layer.type === "background") && Boolean(getLayerImage(layer));
+    if (layerRotateRow) layerRotateRow.style.display = isImageLayer ? "flex" : "none";
+    if (layerTransformActions) layerTransformActions.style.display = isImageLayer ? "flex" : "none";
+    if (isImageLayer && layerRotateInput) {
+      ensureLayerTransforms(layer);
+      layerRotateInput.value = layer.rotation || 0;
+      if (layerRotateValue) layerRotateValue.textContent = Math.round(layer.rotation || 0) + "°";
+    }
+    if (layerCropBtn) layerCropBtn.textContent = cropMode ? "Done" : "Crop";
+    if (layerResetCropBtn) layerResetCropBtn.disabled = !isImageLayer || !layer.crop;
 
     if (layer.type === "image" || layer.type === "background") {
       if (layerScaleRow) layerScaleRow.style.display = "flex";
@@ -3720,6 +4467,7 @@
     renderLayersUI();
     updateDomLayers();
     scheduleJpegPreview();
+    pushHistory();
   }
 
   function moveLayerDown(layerId) {
@@ -3731,6 +4479,7 @@
     renderLayersUI();
     updateDomLayers();
     scheduleJpegPreview();
+    pushHistory();
   }
 
   function deleteLayer(layerId) {
@@ -3745,6 +4494,7 @@
       renderLayersUI();
       updateDomLayers();
       scheduleJpegPreview();
+      pushHistory();
     } else if (targetLayer.type === "background") {
       removeBackgroundAction();
     }
@@ -3754,27 +4504,20 @@
     const layer = layers.find(l => l.id === layerId);
     if (!layer) return;
 
-    const cw = getCanvasWidth();
-    const ch = getCanvasHeight();
-
     if (layer.type === "text") {
       textOffsetX = DEFAULT_TEXT_OFFSET_X;
       textOffsetY = DEFAULT_TEXT_OFFSET_Y;
       updateTextPosition();
-    } else if (layer.type === "image" && layer.img) {
-      const w = layer.img.naturalWidth * (layer.scale || 1);
-      const h = layer.img.naturalHeight * (layer.scale || 1);
-      layer.x = Math.round((cw - w) / 2);
-      layer.y = Math.round((ch - h) / 2);
-      updateDomLayers();
-      scheduleJpegPreview();
-    } else if (layer.type === "background" && bgImageObject) {
-      const w = bgImageObject.naturalWidth * bgScale;
-      const h = bgImageObject.naturalHeight * bgScale;
-      bgX = Math.round((cw - w) / 2);
-      bgY = Math.round((ch - h) / 2);
-      updateBackgroundTransform();
+    } else if (layer.type === "image" || layer.type === "background") {
+      const metrics = getImageLayerMetrics(layer);
+      const cw = getCanvasWidth();
+      const ch = getCanvasHeight();
+      if (metrics) {
+        setLayerPosition(layer, Math.round((cw - metrics.w) / 2), Math.round((ch - metrics.h) / 2));
+        refreshLayerView();
+      }
     }
+    pushHistory();
   }
 
   function updateDomLayers() {
@@ -3807,12 +4550,22 @@
       if (!layer.visible) return;
 
       const imgEl = document.createElement("img");
+      const metrics = getImageLayerMetrics(layer);
       imgEl.className = `overlay-img-item ${layer.id === selectedLayerId ? "is-selected" : ""}`;
       imgEl.src = layer.dataUrl;
       imgEl.alt = layer.name;
       imgEl.style.zIndex = index + 1;
       imgEl.style.opacity = typeof layer.opacity === "number" ? layer.opacity : 1;
-      imgEl.style.transform = `translate(${layer.x}px, ${layer.y}px) scale(${layer.scale || 1})`;
+      if (metrics) {
+        imgEl.style.width = metrics.w + "px";
+        imgEl.style.height = metrics.h + "px";
+        imgEl.style.objectFit = "cover";
+        imgEl.style.objectPosition = `${-metrics.src.sx * metrics.scale}px ${-metrics.src.sy * metrics.scale}px`;
+        imgEl.style.transformOrigin = "center center";
+        imgEl.style.transform = `translate(${metrics.x}px, ${metrics.y}px) rotate(${metrics.rotation}deg) scale(${metrics.flipX ? -1 : 1}, ${metrics.flipY ? -1 : 1})`;
+      } else {
+        imgEl.style.transform = `translate(${layer.x}px, ${layer.y}px) scale(${layer.scale || 1})`;
+      }
       imgEl.style.filter = getCssFilterForPreset(layer.filter || "none");
       imgEl.setAttribute("data-layer-id", layer.id);
 
@@ -3834,11 +4587,19 @@
     bgX = 0;
     bgY = 0;
     bgScale = 1;
+    const bgLayer = layers.find(l => l.type === "background");
+    if (bgLayer) {
+      bgLayer.rotation = 0;
+      bgLayer.flipX = false;
+      bgLayer.flipY = false;
+      bgLayer.crop = null;
+    }
     clearDeepFryCache();
     updateBackgroundTransform();
     renderLayersUI();
     updateDomLayers();
     scheduleJpegPreview();
+    pushHistory();
   }
 
   function getInlineColorRegex() {
@@ -4685,17 +5446,23 @@
     const selected = getSelectedLayer();
     if (!selected || selected.visible === false) {
       selectionBox.style.display = "none";
+      updateCropHandles();
       return;
     }
 
-    if (selected.type === "image" && selected.img) {
-      const w = Math.round((selected.img.naturalWidth || selected.width || 50) * (selected.scale || 1));
-      const h = Math.round((selected.img.naturalHeight || selected.height || 50) * (selected.scale || 1));
+    if (selected.type === "image" || selected.type === "background") {
+      const metrics = getImageLayerMetrics(selected);
+      if (!metrics) {
+        selectionBox.style.display = "none";
+        updateCropHandles();
+        return;
+      }
+      const bounds = getRotatedAABB(metrics);
       selectionBox.style.display = "block";
-      selectionBox.style.left = Math.round(selected.x) + "px";
-      selectionBox.style.top = Math.round(selected.y) + "px";
-      selectionBox.style.width = w + "px";
-      selectionBox.style.height = h + "px";
+      selectionBox.style.left = Math.round(bounds.x) + "px";
+      selectionBox.style.top = Math.round(bounds.y) + "px";
+      selectionBox.style.width = Math.round(bounds.width) + "px";
+      selectionBox.style.height = Math.round(bounds.height) + "px";
     } else if (selected.type === "text") {
       const bounds = getTextBounds();
       const canvasWidth = getCanvasWidth();
@@ -4718,6 +5485,7 @@
     } else {
       selectionBox.style.display = "none";
     }
+    updateCropHandles();
   }
 
   function drawGaussianCensoredText(ctx, text, x, y, fillStyle, lineHeight, blurStrength, outline) {
@@ -5087,10 +5855,7 @@
 
       if (layer.type === "background") {
         if (bgImageObject && bgImageObject.complete && bgImageObject.naturalWidth > 0) {
-          const bgPreset = layer.filter || "none";
-          const bgW = bgImageObject.naturalWidth * bgScale;
-          const bgH = bgImageObject.naturalHeight * bgScale;
-          drawImageWithPreset(ctx, bgImageObject, bgX, bgY, bgW, bgH, bgPreset);
+          drawTransformedLayerImage(ctx, layer, layer.filter || "none");
 
           if (isVignetteEnabled()) {
             drawVignette(ctx, canvasWidth, canvasHeight, getVignetteStrength());
@@ -5109,10 +5874,7 @@
         }
       } else if (layer.type === "image") {
         if (layer.img && layer.img.complete && layer.img.naturalWidth > 0) {
-          const imgPreset = layer.filter || "none";
-          const imgW = layer.img.naturalWidth * (layer.scale || 1);
-          const imgH = layer.img.naturalHeight * (layer.scale || 1);
-          drawImageWithPreset(ctx, layer.img, layer.x, layer.y, imgW, imgH, imgPreset);
+          drawTransformedLayerImage(ctx, layer, layer.filter || "none");
         }
       } else if (layer.type === "text") {
         drawTextLayerToCanvas(ctx, fontPx, fontFamily, lineHeight, maxTextWidth);
@@ -5218,21 +5980,12 @@
         if (pointIsInsideTextBounds(pointX, pointY)) {
           return layer;
         }
-      } else if (layer.type === "image") {
-        if (layer.img && layer.img.naturalWidth > 0) {
-          const w = layer.img.naturalWidth * (layer.scale || 1);
-          const h = layer.img.naturalHeight * (layer.scale || 1);
-          if (
-            pointX >= layer.x &&
-            pointX <= layer.x + w &&
-            pointY >= layer.y &&
-            pointY <= layer.y + h
-          ) {
-            return layer;
-          }
+      } else if (layer.type === "image" || layer.type === "background") {
+        const metrics = getImageLayerMetrics(layer);
+        if (metrics && pointInImageLayer(metrics, pointX, pointY)) {
+          return layer;
         }
-      } else if (layer.type === "background") {
-        if (bgImageObject && bgImageObject.complete && bgImageObject.naturalWidth > 0) {
+        if (layer.type === "background" && bgImageObject && bgImageObject.complete && bgImageObject.naturalWidth > 0 && !metrics) {
           return layer;
         }
       }
@@ -5241,7 +5994,28 @@
   }
 
   canvasStage.addEventListener("mousedown", event => {
+    const handleEl = event.target && event.target.closest ? event.target.closest(".crop-handle") : null;
     const point = getStagePoint(event);
+
+    if (cropMode && handleEl) {
+      const layer = getSelectedLayer();
+      const metrics = getImageLayerMetrics(layer);
+      if (metrics) {
+        dragMode = "crop";
+        dragDidMove = false;
+        cropDrag = {
+          handle: handleEl.getAttribute("data-handle"),
+          layer,
+          metrics: { ...metrics, src: { ...metrics.src } },
+          src: { ...metrics.src }
+        };
+        canvasStage.classList.add("dragging");
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+    }
+
     const hitLayer = findLayerAtPoint(point.x, point.y);
 
     if (hitLayer) {
@@ -5251,6 +6025,7 @@
 
       dragStartX = point.x;
       dragStartY = point.y;
+      dragDidMove = false;
       canvasStage.classList.add("dragging");
       event.preventDefault();
 
@@ -5279,8 +6054,11 @@
     const point = getStagePoint(event);
     const dx = point.x - dragStartX;
     const dy = point.y - dragStartY;
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) dragDidMove = true;
 
-    if (dragMode === "text") {
+    if (dragMode === "crop") {
+      applyCropHandleDrag(point);
+    } else if (dragMode === "text") {
       textOffsetX = originalTextX + dx;
       textOffsetY = originalTextY + dy;
       updateTextPosition();
@@ -5300,8 +6078,13 @@
   });
 
   window.addEventListener("mouseup", () => {
+    if (dragMode && dragDidMove) {
+      pushHistory();
+    }
     dragMode = null;
     draggingLayerId = null;
+    cropDrag = null;
+    dragDidMove = false;
     canvasStage.classList.remove("dragging");
   });
 
@@ -5318,6 +6101,7 @@
       updateDomLayers();
       updateInspectorUI();
       scheduleJpegPreview();
+      scheduleHistoryPush();
     } else if (hitLayer.type === "background" && bgImageObject) {
       event.preventDefault();
       const previousScale = bgScale;
@@ -5331,6 +6115,7 @@
 
       updateBackgroundTransform();
       updateInspectorUI();
+      scheduleHistoryPush();
     }
   }, { passive: false });
 
@@ -5516,7 +6301,10 @@
       scheduleJpegPreview();
     };
     layerOpacityInput.addEventListener("input", handleOpacityChange);
-    layerOpacityInput.addEventListener("change", handleOpacityChange);
+    layerOpacityInput.addEventListener("change", () => {
+      handleOpacityChange();
+      pushHistory();
+    });
   }
 
   if (layerScaleInput) {
@@ -5536,7 +6324,10 @@
       }
     };
     layerScaleInput.addEventListener("input", handleScaleChange);
-    layerScaleInput.addEventListener("change", handleScaleChange);
+    layerScaleInput.addEventListener("change", () => {
+      handleScaleChange();
+      pushHistory();
+    });
   }
 
   if (layerMoveUpBtn) {
@@ -5564,6 +6355,83 @@
     layerDeleteBtn.addEventListener("click", () => {
       const layer = getSelectedLayer();
       if (layer) deleteLayer(layer.id);
+    });
+  }
+
+  if (layerRotateInput) {
+    layerRotateInput.addEventListener("input", () => {
+      const layer = getSelectedLayer();
+      if (!layer) return;
+      setLayerRotation(layer, layerRotateInput.value, false);
+      if (layerRotateValue) layerRotateValue.textContent = Math.round(layer.rotation || 0) + "°";
+    });
+    layerRotateInput.addEventListener("change", () => {
+      const layer = getSelectedLayer();
+      if (layer) setLayerRotation(layer, layerRotateInput.value, true);
+    });
+  }
+
+  if (layerRotateLeftBtn) {
+    layerRotateLeftBtn.addEventListener("click", () => {
+      const layer = getSelectedLayer();
+      if (layer) rotateLayerBy(layer, -90);
+    });
+  }
+
+  if (layerRotateRightBtn) {
+    layerRotateRightBtn.addEventListener("click", () => {
+      const layer = getSelectedLayer();
+      if (layer) rotateLayerBy(layer, 90);
+    });
+  }
+
+  if (layerFlipHBtn) {
+    layerFlipHBtn.addEventListener("click", () => {
+      const layer = getSelectedLayer();
+      if (layer) flipLayer(layer, "h");
+    });
+  }
+
+  if (layerFlipVBtn) {
+    layerFlipVBtn.addEventListener("click", () => {
+      const layer = getSelectedLayer();
+      if (layer) flipLayer(layer, "v");
+    });
+  }
+
+  if (layerCropBtn) {
+    layerCropBtn.addEventListener("click", () => {
+      const layer = getSelectedLayer();
+      if (!isCroppableLayer(layer)) return;
+      if (cropMode) {
+        endCropMode();
+        pushHistory();
+      } else {
+        beginCropMode(layer);
+      }
+    });
+  }
+
+  if (layerResetCropBtn) {
+    layerResetCropBtn.addEventListener("click", () => {
+      const layer = getSelectedLayer();
+      if (layer) resetLayerCrop(layer);
+    });
+  }
+
+  if (undoButton) undoButton.addEventListener("click", () => { undoHistory(); });
+  if (redoButton) redoButton.addEventListener("click", () => { redoHistory(); });
+  if (saveProjectButton) saveProjectButton.addEventListener("click", saveProjectToFile);
+  if (loadProjectButton) {
+    loadProjectButton.addEventListener("click", () => {
+      if (projectFileInput) projectFileInput.click();
+    });
+  }
+  if (projectFileInput) {
+    projectFileInput.addEventListener("change", event => {
+      const file = event.target.files && event.target.files[0];
+      if (file) loadProjectFromFile(file);
+      projectFileInput.value = "";
     });
   }
 
@@ -5780,9 +6648,13 @@
     textOffsetY = DEFAULT_TEXT_OFFSET_Y;
     clampTextToCanvas();
     updateTextPosition();
+    pushHistory();
   });
 
-  input.addEventListener("input", render);
+  input.addEventListener("input", () => {
+    render();
+    scheduleHistoryPush();
+  });
 
   // ImgBB modal and key management
   const imgbbModal = document.getElementById("imgbbModal");
@@ -6101,6 +6973,7 @@
   clearButton.addEventListener("click", () => {
     input.value = "";
     render();
+    pushHistory();
   });
 
   if (resetSettingsButton) {
@@ -6124,6 +6997,7 @@
   renderLayersUI();
   updateDomLayers();
   syncColorPickerFromSelection();
+  pushHistory();
 
   if (typeof ResizeObserver !== "undefined" && previewOuter) {
     const previewFitObserver = new ResizeObserver(() => {
@@ -6132,6 +7006,47 @@
     previewFitObserver.observe(previewOuter);
   }
   window.addEventListener("resize", updateCanvasStageSize);
+
+  window.addEventListener("keydown", event => {
+    const target = event.target;
+    const tag = target && target.tagName ? target.tagName.toLowerCase() : "";
+    const typingInOtherField = (tag === "input" || tag === "textarea") && target !== input;
+    const mod = event.ctrlKey || event.metaKey;
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+
+    if (key === "Escape" && cropMode) {
+      endCropMode();
+      event.preventDefault();
+      return;
+    }
+
+    if (!mod) return;
+
+    if (key === "s") {
+      event.preventDefault();
+      saveProjectToFile();
+      return;
+    }
+
+    if (typingInOtherField) return;
+
+    if (key === "o") {
+      event.preventDefault();
+      if (projectFileInput) projectFileInput.click();
+      return;
+    }
+
+    if (key === "z" && !event.shiftKey) {
+      event.preventDefault();
+      undoHistory();
+      return;
+    }
+
+    if (key === "y" || (key === "z" && event.shiftKey)) {
+      event.preventDefault();
+      redoHistory();
+    }
+  });
 
   if (previewFitToggle) {
     previewFitToggle.addEventListener("click", () => {
@@ -6147,6 +7062,8 @@
     "Add images on top of the canvas via the Layers box or <strong>+ Add Image Layer</strong>. Drag on the canvas to move any layer, or use the mouse wheel to scale.",
     "Highlight any text and press <strong>Ctrl+B</strong> (or click <strong>Blur Selection</strong>) to censor sensitive names, radio channels, or locations.",
     "Paste logs with <strong>!{#HEX}</strong> color codes. Wrap a word in slashes to italicize it: <strong>/quietly/</strong>. Timestamps are hidden in the preview. Select text and use <strong>Set Color</strong> (Ctrl+Shift+C) — the picker follows the current action color.",
+    "Press <strong>Ctrl+Z</strong> to undo and <strong>Ctrl+Y</strong> to redo canvas edits. <strong>Ctrl+S</strong> saves a project file; <strong>Ctrl+O</strong> loads one.",
+    "Select an image layer to <strong>rotate</strong>, <strong>flip</strong>, or <strong>crop</strong> it. Crop shows handles on the preview; drag them, then click Done.",
     "Switch censor modes in top controls: choose between smooth <strong>Gaussian Blur</strong>, retro <strong>Mosaic Blur</strong>, or <strong>Redacted Black Bar</strong>.",
     "Press <strong>Ctrl+V</strong> anywhere to instantly paste screenshots or copied images directly onto the canvas as new layers.",
     "Drag and drop image files directly from your computer onto the canvas stage to add them as background or overlay graphics.",
