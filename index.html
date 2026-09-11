@@ -1289,6 +1289,13 @@
     transform-origin: top left;
   }
 
+  .text-layers-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
   .preview-box {
     position: absolute;
     left: 0;
@@ -1350,7 +1357,8 @@
     border-radius: 2px;
   }
 
-  .preview-box.censor-redact .blurred-text {
+  .preview-box.censor-redact .blurred-text,
+  .text-layers-container.censor-redact .blurred-text {
     filter: none;
     background: #000000 !important;
     color: transparent !important;
@@ -1358,12 +1366,14 @@
     box-shadow: 0 0 0 1px #000000;
   }
 
-  .preview-box.censor-redact .blurred-text * {
+  .preview-box.censor-redact .blurred-text *,
+  .text-layers-container.censor-redact .blurred-text * {
     color: transparent !important;
     visibility: hidden;
   }
 
-  .preview-box.censor-mosaic .blurred-text {
+  .preview-box.censor-mosaic .blurred-text,
+  .text-layers-container.censor-mosaic .blurred-text {
     filter: blur(calc(var(--mosaic-size, 3px) * 0.35)) contrast(160%);
     position: relative;
     border-radius: 2px;
@@ -1979,7 +1989,8 @@
                 <div id="backgroundGrainOverlay" class="background-grain-overlay" style="display: none;"></div>
               </div>
               <div id="overlayLayersContainer" class="overlay-layers-container"></div>
-              <div id="preview" class="preview-box"></div>
+              <div id="textLayersContainer" class="text-layers-container"></div>
+              <div id="preview" class="preview-box" style="display: none;" aria-hidden="true"></div>
               <img id="jpegPreviewImage" class="jpeg-preview-layer" alt="" />
               <div id="selectionBox" class="selection-box-overlay"></div>
               <div id="cropHandles" class="crop-handles" aria-hidden="true">
@@ -2010,7 +2021,7 @@
 
     <aside class="sidebar">
       <section class="side-section pane-input">
-        <div class="side-section-title">Chat log</div>
+        <div class="side-section-title" id="chatLogTitle">Chat log</div>
         <textarea id="input" spellcheck="false" placeholder="Paste a GTA RP chatlog here. Timestamps are hidden. Color codes like !{#D1D1D1} and /italics/ are supported.">[18:42:03] !{#D1D1D1}Carl Johnson says: We hitting Grove in ten.
 [18:42:11] !{#FF00C3}[!] !{#D8D8D8}Big Smoke says (to Carl Johnson): Bring the extra clip. Don't be /late/.
 [18:42:19] !{#F0F0F0}Carl Johnson says (to Big Smoke): Already in the car. Let's roll.
@@ -2052,6 +2063,7 @@
         </div>
         <div class="layers-toolbar">
           <button id="addLayerImageBtn" class="btn btn-neutral btn-sm" title="Add an image layer on top of the canvas">+ Add Image Layer</button>
+          <button id="addChatBoxBtn" class="btn btn-neutral btn-sm" type="button" title="Add another chat box layer">+ Add Chat Box</button>
           <input type="file" id="layerImageFileInput" accept="image/*" multiple style="display: none;" />
         </div>
         <div class="layers-list-container" id="layersListContainer">
@@ -2370,6 +2382,9 @@
   const addLayerImageBtn = document.getElementById("addLayerImageBtn");
   const layerImageFileInput = document.getElementById("layerImageFileInput");
   const overlayLayersContainer = document.getElementById("overlayLayersContainer");
+  const textLayersContainer = document.getElementById("textLayersContainer");
+  const chatLogTitle = document.getElementById("chatLogTitle");
+  const addChatBoxBtn = document.getElementById("addChatBoxBtn");
   const backgroundLayerDom = document.getElementById("backgroundLayerDom");
   const selectionBox = document.getElementById("selectionBox");
 
@@ -2438,12 +2453,16 @@
     {
       id: "layer-text",
       type: "text",
-      name: "Chatlog Text",
+      name: "Chat Box 1",
       visible: true,
-      opacity: 1
+      opacity: 1,
+      x: 15,
+      y: 15,
+      chatlog: null
     }
   ];
   let selectedLayerId = "layer-text";
+  let lastTextLayerId = "layer-text";
   let layerIdCounter = 0;
   let draggingLayerId = null;
   let originalLayerX = 0;
@@ -2491,10 +2510,8 @@
 
   const DEFAULT_TEXT_OFFSET_X = 15;
   const DEFAULT_TEXT_OFFSET_Y = 15;
-
-  let textOffsetX = DEFAULT_TEXT_OFFSET_X;
-  let textOffsetY = DEFAULT_TEXT_OFFSET_Y;
   let previewFitToView = true;
+  let syncingChatlog = false;
 
   let dragMode = null;
   let dragStartX = 0;
@@ -2737,6 +2754,7 @@
     document.documentElement.style.setProperty("--chat-text-padding", `${DEFAULT_SETTINGS.textPadding}px`);
     updateTextPanelWidth();
     preview.classList.toggle("no-text-background", !backgroundToggle.checked);
+    getPreviewChromeTarget().classList.toggle("no-text-background", !backgroundToggle.checked);
     updateCanvasStageSize();
     updateFontFamily();
     updateOutlineSettings();
@@ -3215,9 +3233,10 @@
     return Math.min(Math.max(value, 0), 80);
   }
 
-  function getEffectiveTextPanelWidth() {
+  function getEffectiveTextPanelWidth(layer) {
     const padding = getTextPadding();
-    const remaining = Math.max(20, getCanvasWidth() - Math.max(0, textOffsetX) - padding * 2);
+    const x = layer && typeof layer.x === "number" ? layer.x : 0;
+    const remaining = Math.max(20, getCanvasWidth() - Math.max(0, x) - padding * 2);
     return Math.min(getTextPanelWidth(), remaining);
   }
 
@@ -3257,8 +3276,8 @@
 
   function updateFontFamily() {
     const { family, weight } = getFontSpec();
-    preview.style.setProperty("--chat-font-family", family);
-    preview.style.setProperty("--chat-font-weight", weight);
+    setChatChromeProperty("--chat-font-family", family);
+    setChatChromeProperty("--chat-font-weight", weight);
     render();
   }
 
@@ -3288,23 +3307,23 @@
 
     if (style === "none") {
       strokeWidthControl.style.display = "none";
-      preview.style.setProperty("--chat-text-stroke-width", "0px");
-      preview.style.setProperty("--chat-text-shadow", "none");
+      setChatChromeProperty("--chat-text-stroke-width", "0px");
+      setChatChromeProperty("--chat-text-shadow", "none");
     } else {
       strokeWidthControl.style.display = "flex";
       if (style === "stroke") {
-        preview.style.setProperty("--chat-text-stroke-width", "0px");
-        preview.style.setProperty("--chat-text-shadow", evenOutline);
+        setChatChromeProperty("--chat-text-stroke-width", "0px");
+        setChatChromeProperty("--chat-text-shadow", evenOutline);
       } else if (style === "shadow") {
         const shadowOffset = Math.max(1, thickness).toFixed(1) + "px";
         const shadowBlur = Math.max(2, thickness * 1.6).toFixed(1) + "px";
-        preview.style.setProperty("--chat-text-stroke-width", "0px");
-        preview.style.setProperty("--chat-text-shadow", `${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)`);
+        setChatChromeProperty("--chat-text-stroke-width", "0px");
+        setChatChromeProperty("--chat-text-shadow", `${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)`);
       } else if (style === "both") {
         const shadowOffset = (thickness * 1.4).toFixed(1) + "px";
         const shadowBlur = (thickness * 2).toFixed(1) + "px";
-        preview.style.setProperty("--chat-text-stroke-width", "0px");
-        preview.style.setProperty("--chat-text-shadow", `${evenOutline}, ${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)`);
+        setChatChromeProperty("--chat-text-stroke-width", "0px");
+        setChatChromeProperty("--chat-text-shadow", `${evenOutline}, ${shadowOffset} ${shadowOffset} ${shadowBlur} rgba(0,0,0,0.95)`);
       }
     }
     render();
@@ -3319,21 +3338,22 @@
   function updateCensorSettings() {
     const { mode, blurStrength } = getCensorSettings();
     blurStrengthValue.textContent = `${blurStrength}px`;
+    const chrome = getPreviewChromeTarget();
 
-    preview.classList.remove("censor-redact", "censor-mosaic");
+    chrome.classList.remove("censor-redact", "censor-mosaic");
 
     if (mode === "redact") {
       blurStrengthControl.style.display = "none";
-      preview.classList.add("censor-redact");
+      chrome.classList.add("censor-redact");
     } else if (mode === "mosaic") {
       blurStrengthControl.style.display = "flex";
       if (blurStrengthLabel) blurStrengthLabel.textContent = "Mosaic size:";
-      preview.classList.add("censor-mosaic");
-      preview.style.setProperty("--mosaic-size", `${blurStrength}px`);
+      chrome.classList.add("censor-mosaic");
+      chrome.style.setProperty("--mosaic-size", `${blurStrength}px`);
     } else {
       blurStrengthControl.style.display = "flex";
       if (blurStrengthLabel) blurStrengthLabel.textContent = "Blur strength:";
-      preview.style.setProperty("--blur-radius", `${blurStrength}px`);
+      chrome.style.setProperty("--blur-radius", `${blurStrength}px`);
     }
     render();
   }
@@ -3572,7 +3592,9 @@
     scheduleJpegPreview();
   }
 
-  function clampTextToCanvas() {
+  function clampTextLayerToCanvas(layer) {
+    if (!layer || layer.type !== "text") return;
+    ensureTextLayerFields(layer);
     const canvasWidth = getCanvasWidth();
     const canvasHeight = getCanvasHeight();
     const maxWrap = getMaxTextPanelWidth();
@@ -3586,29 +3608,82 @@
     }
 
     for (let i = 0; i < 2; i++) {
-      const size = measureTextBox();
+      const size = measureTextBox(layer);
       const maxX = Math.max(0, canvasWidth - size.width);
       const maxY = Math.max(0, canvasHeight - size.height);
-      textOffsetX = Math.min(Math.max(0, textOffsetX), maxX);
-      textOffsetY = Math.min(Math.max(0, textOffsetY), maxY);
+      layer.x = Math.min(Math.max(0, layer.x), maxX);
+      layer.y = Math.min(Math.max(0, layer.y), maxY);
     }
+  }
 
-    document.documentElement.style.setProperty("--text-panel-width", getEffectiveTextPanelWidth() + "px");
+  function clampTextToCanvas() {
+    getTextLayers().forEach(clampTextLayerToCanvas);
+    document.documentElement.style.setProperty("--text-panel-width", getEffectiveTextPanelWidth(getActiveTextLayer()) + "px");
     document.documentElement.style.setProperty("--chat-text-padding", getTextPadding() + "px");
-    if (preview) {
-      preview.style.maxHeight = Math.max(0, canvasHeight - Math.max(0, textOffsetY)) + "px";
-    }
   }
 
   function updateTextPosition() {
     clampTextToCanvas();
-    preview.style.transform = `translate(${textOffsetX}px, ${textOffsetY}px)`;
-    updateSelectionBox();
+    updateDomLayers();
     scheduleJpegPreview();
   }
 
   function getSelectedLayer() {
     return layers.find(l => l.id === selectedLayerId) || layers[layers.length - 1];
+  }
+
+  function getTextLayers() {
+    return layers.filter(layer => layer.type === "text");
+  }
+
+  function ensureTextLayerFields(layer) {
+    if (!layer || layer.type !== "text") return layer;
+    if (typeof layer.x !== "number" || Number.isNaN(layer.x)) layer.x = DEFAULT_TEXT_OFFSET_X;
+    if (typeof layer.y !== "number" || Number.isNaN(layer.y)) layer.y = DEFAULT_TEXT_OFFSET_Y;
+    if (typeof layer.chatlog !== "string") layer.chatlog = "";
+    return layer;
+  }
+
+  function getActiveTextLayer() {
+    const selected = getSelectedLayer();
+    if (selected && selected.type === "text") {
+      lastTextLayerId = selected.id;
+      return ensureTextLayerFields(selected);
+    }
+    const remembered = layers.find(layer => layer.id === lastTextLayerId && layer.type === "text");
+    if (remembered) return ensureTextLayerFields(remembered);
+    const first = getTextLayers()[0];
+    if (first) lastTextLayerId = first.id;
+    return first ? ensureTextLayerFields(first) : null;
+  }
+
+  function nextChatBoxName() {
+    const used = new Set(getTextLayers().map(layer => layer.name));
+    let n = 1;
+    while (used.has("Chat Box " + n)) n += 1;
+    return "Chat Box " + n;
+  }
+
+  function loadChatlogIntoTextarea(layer) {
+    if (!input) return;
+    syncingChatlog = true;
+    input.value = layer && typeof layer.chatlog === "string" ? layer.chatlog : "";
+    syncingChatlog = false;
+    if (chatLogTitle) {
+      const count = getTextLayers().length;
+      chatLogTitle.textContent = count > 1 && layer ? `Chat log · ${layer.name}` : "Chat log";
+    }
+  }
+
+  function getPreviewChromeTarget() {
+    return textLayersContainer || preview;
+  }
+
+  function setChatChromeProperty(name, value) {
+    document.documentElement.style.setProperty(name, value);
+    if (preview) preview.style.setProperty(name, value);
+    const chrome = getPreviewChromeTarget();
+    if (chrome && chrome !== preview) chrome.style.setProperty(name, value);
   }
 
   function cloneCropRect(crop) {
@@ -3779,8 +3854,6 @@
     return {
       chatlog: input ? input.value : "",
       settings: collectSettings(),
-      textOffsetX,
-      textOffsetY,
       bgX,
       bgY,
       bgScale,
@@ -3797,6 +3870,7 @@
         scale: layer.scale,
         x: layer.x,
         y: layer.y,
+        chatlog: layer.type === "text" ? (layer.chatlog || "") : undefined,
         dataUrl: layer.dataUrl || "",
         width: layer.width,
         height: layer.height,
@@ -3813,7 +3887,6 @@
     if (a.chatlog !== b.chatlog) return false;
     if (a.bgImageDataUrl !== b.bgImageDataUrl) return false;
     if (a.bgX !== b.bgX || a.bgY !== b.bgY || a.bgScale !== b.bgScale) return false;
-    if (a.textOffsetX !== b.textOffsetX || a.textOffsetY !== b.textOffsetY) return false;
     if (a.selectedLayerId !== b.selectedLayerId) return false;
     if (!a.layers || !b.layers || a.layers.length !== b.layers.length) return false;
     if (JSON.stringify(a.settings) !== JSON.stringify(b.settings)) return false;
@@ -3827,6 +3900,7 @@
         && layer.scale === other.scale
         && layer.x === other.x
         && layer.y === other.y
+        && layer.chatlog === other.chatlog
         && layer.dataUrl === other.dataUrl
         && layer.rotation === other.rotation
         && layer.flipX === other.flipX
@@ -3880,22 +3954,36 @@
 
   async function restoreHistoryState(snapshot) {
     if (!snapshot) return;
-    historyLocked = true;
+      historyLocked = true;
     cropMode = false;
     try {
-      if (input) input.value = snapshot.chatlog || "";
       bgX = Number(snapshot.bgX) || 0;
       bgY = Number(snapshot.bgY) || 0;
       bgScale = Number(snapshot.bgScale) || 1;
       bgImageDataUrl = snapshot.bgImageDataUrl || "";
-      textOffsetX = Number(snapshot.textOffsetX);
-      textOffsetY = Number(snapshot.textOffsetY);
-      if (Number.isNaN(textOffsetX)) textOffsetX = DEFAULT_TEXT_OFFSET_X;
-      if (Number.isNaN(textOffsetY)) textOffsetY = DEFAULT_TEXT_OFFSET_Y;
       selectedLayerId = snapshot.selectedLayerId || "layer-text";
       layerIdCounter = Number(snapshot.layerIdCounter) || 0;
 
       layers = (snapshot.layers || []).map(layer => ensureLayerTransforms({ ...layer, img: null }));
+      layers.forEach(layer => {
+        if (layer.type === "text") ensureTextLayerFields(layer);
+      });
+      const firstText = getTextLayers()[0];
+      if (firstText) {
+        if (snapshot.chatlog && !getTextLayers().some(layer => layer.chatlog)) {
+          firstText.chatlog = snapshot.chatlog;
+        }
+        if (typeof snapshot.textOffsetX === "number" && snapshot.layers && snapshot.layers.some(l => l.type === "text" && typeof l.x !== "number")) {
+          firstText.x = Number(snapshot.textOffsetX) || DEFAULT_TEXT_OFFSET_X;
+          firstText.y = Number(snapshot.textOffsetY) || DEFAULT_TEXT_OFFSET_Y;
+        }
+      }
+      const restoredSelected = layers.find(l => l.id === selectedLayerId);
+      if (restoredSelected && restoredSelected.type === "text") {
+        lastTextLayerId = restoredSelected.id;
+      } else if (firstText) {
+        lastTextLayerId = firstText.id;
+      }
       applySettingsObject(snapshot.settings || {});
 
       if (bgImageDataUrl) {
@@ -3915,6 +4003,7 @@
       document.documentElement.style.setProperty("--chat-font-size", `${Number(fontSize.value) || 14}px`);
       document.documentElement.style.setProperty("--chat-text-padding", `${getTextPadding()}px`);
       preview.classList.toggle("no-text-background", !backgroundToggle.checked);
+    getPreviewChromeTarget().classList.toggle("no-text-background", !backgroundToggle.checked);
       updateTextPanelWidth();
       updateCanvasStageSize();
       updateFontFamily();
@@ -3922,6 +4011,7 @@
       updateCensorSettings();
       updateAtmosphereDom();
       updateDeepFryControlsVisibility();
+      loadChatlogIntoTextarea(getActiveTextLayer());
       render();
       renderLayersUI();
       updateDomLayers();
@@ -4257,6 +4347,29 @@
     reader.readAsDataURL(file);
   }
 
+  function addChatBoxLayer() {
+    layerIdCounter += 1;
+    const count = getTextLayers().length;
+    const newLayer = {
+      id: "layer-text-" + Date.now() + "-" + layerIdCounter,
+      type: "text",
+      name: nextChatBoxName(),
+      visible: true,
+      opacity: 1,
+      x: DEFAULT_TEXT_OFFSET_X + count * 28,
+      y: DEFAULT_TEXT_OFFSET_Y + count * 36,
+      chatlog: ""
+    };
+    layers.push(newLayer);
+    selectedLayerId = newLayer.id;
+    loadChatlogIntoTextarea(newLayer);
+    render();
+    renderLayersUI();
+    updateDomLayers();
+    scheduleJpegPreview();
+    pushHistory();
+  }
+
   function renderLayersUI() {
     if (!layersList) return;
 
@@ -4368,8 +4481,8 @@
       item.appendChild(info);
       item.appendChild(reorder);
 
-      // Delete button for image layers
-      if (layer.type === "image") {
+      // Delete button for image layers and extra chat boxes
+      if (layer.type === "image" || (layer.type === "text" && getTextLayers().length > 1)) {
         const delBtn = document.createElement("button");
         delBtn.type = "button";
         delBtn.className = "layer-delete-btn";
@@ -4387,6 +4500,11 @@
           endCropMode();
         }
         selectedLayerId = layer.id;
+        if (layer.type === "text") {
+          loadChatlogIntoTextarea(layer);
+        } else {
+          loadChatlogIntoTextarea(getActiveTextLayer());
+        }
         renderLayersUI();
         updateDomLayers();
       });
@@ -4462,7 +4580,14 @@
         atmospherePresetSelect.title = "Filter (applies to background image)";
       }
       if (layerCenterBtn) layerCenterBtn.style.display = "inline-flex";
-      if (layerDeleteBtn) layerDeleteBtn.style.display = "none";
+      if (layerDeleteBtn) {
+        if (getTextLayers().length > 1) {
+          layerDeleteBtn.style.display = "inline-flex";
+          layerDeleteBtn.textContent = "Delete";
+        } else {
+          layerDeleteBtn.style.display = "none";
+        }
+      }
     }
   }
 
@@ -4494,11 +4619,14 @@
     const targetLayer = layers.find(l => l.id === layerId);
     if (!targetLayer) return;
 
-    if (targetLayer.type === "image") {
+    if (targetLayer.type === "image" || (targetLayer.type === "text" && getTextLayers().length > 1)) {
       layers = layers.filter(l => l.id !== layerId);
       if (selectedLayerId === layerId) {
-        selectedLayerId = layers[layers.length - 1] ? layers[layers.length - 1].id : "layer-text";
+        const fallbackText = getTextLayers()[0];
+        selectedLayerId = fallbackText ? fallbackText.id : (layers[layers.length - 1] ? layers[layers.length - 1].id : "layer-text");
       }
+      loadChatlogIntoTextarea(getActiveTextLayer());
+      render();
       renderLayersUI();
       updateDomLayers();
       scheduleJpegPreview();
@@ -4513,8 +4641,8 @@
     if (!layer) return;
 
     if (layer.type === "text") {
-      textOffsetX = DEFAULT_TEXT_OFFSET_X;
-      textOffsetY = DEFAULT_TEXT_OFFSET_Y;
+      layer.x = DEFAULT_TEXT_OFFSET_X;
+      layer.y = DEFAULT_TEXT_OFFSET_Y;
       updateTextPosition();
     } else if (layer.type === "image" || layer.type === "background") {
       const metrics = getImageLayerMetrics(layer);
@@ -4546,7 +4674,26 @@
       }
     }
 
-    if (preview) {
+    if (textLayersContainer) {
+      textLayersContainer.innerHTML = "";
+      layers.forEach((layer, index) => {
+        if (layer.type !== "text") return;
+        ensureTextLayerFields(layer);
+        const box = document.createElement("div");
+        box.className = "preview-box" + (layer.id === selectedLayerId ? " is-selected" : "");
+        box.setAttribute("data-layer-id", layer.id);
+        box.innerHTML = getChatlogHtml(layer.chatlog);
+        const panelWidth = getEffectiveTextPanelWidth(layer);
+        box.style.zIndex = index + 1;
+        box.style.display = layer.visible === false ? "none" : "block";
+        box.style.opacity = typeof layer.opacity === "number" ? layer.opacity : 1;
+        box.style.width = panelWidth + "px";
+        box.style.maxWidth = panelWidth + "px";
+        box.style.transform = `translate(${layer.x}px, ${layer.y}px)`;
+        box.style.maxHeight = Math.max(0, getCanvasHeight() - Math.max(0, layer.y)) + "px";
+        textLayersContainer.appendChild(box);
+      });
+    } else if (preview) {
       preview.style.zIndex = textIdx !== -1 ? (textIdx + 1) : 2;
       preview.style.display = (textLayer && textLayer.visible !== false) ? "block" : "none";
       preview.style.opacity = textLayer && typeof textLayer.opacity === "number" ? textLayer.opacity : 1;
@@ -5250,8 +5397,8 @@
     return result;
   }
 
-  function render() {
-    const lines = input.value.split("\n").map((rawLine) => {
+  function getChatlogHtml(chatlog) {
+    return String(chatlog || "").split("\n").map((rawLine) => {
       if (rawLine.trim() === "") {
         return `<span class="line blank-line">&nbsp;</span>`;
       }
@@ -5274,14 +5421,20 @@
       }).join("");
 
       return `<span class="line"><span class="text-bg ${className}">${innerHtml}</span></span>`;
-    });
+    }).join("");
+  }
 
-    preview.innerHTML = lines.join("");
+  function render() {
+    const active = getActiveTextLayer();
+    if (active && !syncingChatlog && input && input.value !== (active.chatlog || "")) {
+      active.chatlog = input.value;
+    }
     updateTextPosition();
   }
 
-  function getVisibleLinesForCanvas() {
-    return input.value.split("\n").map(rawLine => {
+  function getVisibleLinesForCanvas(chatlog) {
+    const source = typeof chatlog === "string" ? chatlog : (getActiveTextLayer() ? getActiveTextLayer().chatlog : (input ? input.value : ""));
+    return String(source || "").split("\n").map(rawLine => {
       const isBlank = rawLine.trim() === "";
       const visibleText = stripTimestamp(rawLine);
       const className = classifyLine(rawLine);
@@ -5381,7 +5534,8 @@
     return width;
   }
 
-  function measureTextBox() {
+  function measureTextBox(layer) {
+    const textLayer = layer && layer.type === "text" ? ensureTextLayerFields(layer) : getActiveTextLayer();
     const fontPx = getFontSize();
     const lineHeight = Math.round(fontPx * 1.25);
     const innerX = 4;
@@ -5389,13 +5543,13 @@
     const boxPad = getTextPadding();
     const canvasWidth = getCanvasWidth();
     const canvasHeight = getCanvasHeight();
-    const maxTextWidth = getEffectiveTextPanelWidth();
+    const maxTextWidth = getEffectiveTextPanelWidth(textLayer);
 
     const measuringCanvas = document.createElement("canvas");
     const ctx = measuringCanvas.getContext("2d");
     ctx.font = getCanvasFont(fontPx);
 
-    const sourceLines = getVisibleLinesForCanvas();
+    const sourceLines = getVisibleLinesForCanvas(textLayer ? textLayer.chatlog : "");
 
     let maxWidth = 1;
     let rowCount = 0;
@@ -5419,8 +5573,10 @@
       });
     });
 
-    const remainingWidth = Math.max(20, canvasWidth - Math.max(0, textOffsetX));
-    const remainingHeight = Math.max(lineHeight, canvasHeight - Math.max(0, textOffsetY));
+    const offsetX = textLayer ? textLayer.x : 0;
+    const offsetY = textLayer ? textLayer.y : 0;
+    const remainingWidth = Math.max(20, canvasWidth - Math.max(0, offsetX));
+    const remainingHeight = Math.max(lineHeight, canvasHeight - Math.max(0, offsetY));
 
     return {
       width: Math.max(20, Math.min(maxWidth + innerX * 2 + boxPad * 2, maxTextWidth + boxPad * 2, remainingWidth)),
@@ -5428,18 +5584,19 @@
     };
   }
 
-  function getTextBounds() {
-    const size = measureTextBox();
+  function getTextBounds(layer) {
+    const textLayer = layer && layer.type === "text" ? ensureTextLayerFields(layer) : getActiveTextLayer();
+    const size = measureTextBox(textLayer);
     return {
-      x: textOffsetX,
-      y: textOffsetY,
+      x: textLayer ? textLayer.x : DEFAULT_TEXT_OFFSET_X,
+      y: textLayer ? textLayer.y : DEFAULT_TEXT_OFFSET_Y,
       width: size.width,
       height: size.height
     };
   }
 
-  function pointIsInsideTextBounds(x, y) {
-    const bounds = getTextBounds();
+  function pointIsInsideTextBounds(layer, x, y) {
+    const bounds = getTextBounds(layer);
 
     return (
       x >= bounds.x &&
@@ -5472,7 +5629,7 @@
       selectionBox.style.width = Math.round(bounds.width) + "px";
       selectionBox.style.height = Math.round(bounds.height) + "px";
     } else if (selected.type === "text") {
-      const bounds = getTextBounds();
+      const bounds = getTextBounds(selected);
       const canvasWidth = getCanvasWidth();
       const canvasHeight = getCanvasHeight();
       const left = Math.max(0, bounds.x);
@@ -5660,8 +5817,8 @@
     ctx.closePath();
   }
 
-  function buildWrappedRows(ctx, maxTextWidth) {
-    const sourceLines = getVisibleLinesForCanvas();
+  function buildWrappedRows(ctx, maxTextWidth, chatlog) {
+    const sourceLines = getVisibleLinesForCanvas(chatlog);
     const wrappedRows = [];
 
     sourceLines.forEach(line => {
@@ -5752,17 +5909,18 @@
     }
   }
 
-  function drawTextLayerToCanvas(ctx, fontPx, fontFamily, lineHeight, maxTextWidth) {
+  function drawTextLayerToCanvas(ctx, layer, fontPx, fontFamily, lineHeight, maxTextWidth) {
+    ensureTextLayerFields(layer);
     ctx.font = getCanvasFont(fontPx, fontFamily);
     ctx.textBaseline = "top";
 
     const boxPad = getTextPadding();
     const innerX = 4;
     const innerY = 2;
-    const originX = Math.round(textOffsetX + boxPad);
-    const originY = Math.round(textOffsetY + boxPad);
+    const originX = Math.round(layer.x + boxPad);
+    const originY = Math.round(layer.y + boxPad);
 
-    const wrappedRows = buildWrappedRows(ctx, maxTextWidth);
+    const wrappedRows = buildWrappedRows(ctx, maxTextWidth, layer.chatlog);
 
     wrappedRows.forEach((row, index) => {
       const y = originY + innerY + index * lineHeight;
@@ -5824,7 +5982,6 @@
     const fontPx = getFontSize();
     const fontFamily = getFontFamily();
     const lineHeight = Math.round(fontPx * 1.25);
-    const maxTextWidth = getEffectiveTextPanelWidth();
 
     const canvasWidth = getCanvasWidth();
     const canvasHeight = getCanvasHeight();
@@ -5885,7 +6042,7 @@
           drawTransformedLayerImage(ctx, layer, layer.filter || "none");
         }
       } else if (layer.type === "text") {
-        drawTextLayerToCanvas(ctx, fontPx, fontFamily, lineHeight, maxTextWidth);
+        drawTextLayerToCanvas(ctx, layer, fontPx, fontFamily, lineHeight, getEffectiveTextPanelWidth(layer));
       }
 
       ctx.restore();
@@ -5985,7 +6142,7 @@
       if (!layer.visible) continue;
 
       if (layer.type === "text") {
-        if (pointIsInsideTextBounds(pointX, pointY)) {
+        if (pointIsInsideTextBounds(layer, pointX, pointY)) {
           return layer;
         }
       } else if (layer.type === "image" || layer.type === "background") {
@@ -6039,8 +6196,10 @@
 
       if (hitLayer.type === "text") {
         dragMode = "text";
-        originalTextX = textOffsetX;
-        originalTextY = textOffsetY;
+        draggingLayerId = hitLayer.id;
+        originalTextX = hitLayer.x;
+        originalTextY = hitLayer.y;
+        loadChatlogIntoTextarea(hitLayer);
       } else if (hitLayer.type === "image") {
         dragMode = "image";
         draggingLayerId = hitLayer.id;
@@ -6067,9 +6226,12 @@
     if (dragMode === "crop") {
       applyCropHandleDrag(point);
     } else if (dragMode === "text") {
-      textOffsetX = originalTextX + dx;
-      textOffsetY = originalTextY + dy;
-      updateTextPosition();
+      const layer = layers.find(l => l.id === draggingLayerId && l.type === "text");
+      if (layer) {
+        layer.x = originalTextX + dx;
+        layer.y = originalTextY + dy;
+        updateTextPosition();
+      }
     } else if (dragMode === "image") {
       const layer = layers.find(l => l.id === draggingLayerId);
       if (layer) {
@@ -6209,6 +6371,7 @@
 
   backgroundToggle.addEventListener("change", () => {
     preview.classList.toggle("no-text-background", !backgroundToggle.checked);
+    getPreviewChromeTarget().classList.toggle("no-text-background", !backgroundToggle.checked);
     scheduleJpegPreview();
     saveCurrentSettings();
   });
@@ -6449,6 +6612,10 @@
     });
   }
 
+  if (addChatBoxBtn) {
+    addChatBoxBtn.addEventListener("click", addChatBoxLayer);
+  }
+
   if (layerImageFileInput) {
     layerImageFileInput.addEventListener("change", event => {
       const files = event.target.files;
@@ -6652,14 +6819,19 @@
   });
 
   resetTextPositionButton.addEventListener("click", () => {
-    textOffsetX = DEFAULT_TEXT_OFFSET_X;
-    textOffsetY = DEFAULT_TEXT_OFFSET_Y;
+    const layer = getActiveTextLayer();
+    if (layer) {
+      layer.x = DEFAULT_TEXT_OFFSET_X;
+      layer.y = DEFAULT_TEXT_OFFSET_Y;
+    }
     clampTextToCanvas();
     updateTextPosition();
     pushHistory();
   });
 
   input.addEventListener("input", () => {
+    const layer = getActiveTextLayer();
+    if (layer && !syncingChatlog) layer.chatlog = input.value;
     render();
     scheduleHistoryPush();
   });
@@ -6980,6 +7152,8 @@
 
   clearButton.addEventListener("click", () => {
     input.value = "";
+    const layer = getActiveTextLayer();
+    if (layer) layer.chatlog = "";
     render();
     pushHistory();
   });
@@ -6990,11 +7164,18 @@
 
   loadAndApplySavedSettings();
 
+  const firstTextLayer = getTextLayers()[0];
+  if (firstTextLayer && typeof firstTextLayer.chatlog !== "string") {
+    firstTextLayer.chatlog = input ? input.value : "";
+  }
+  loadChatlogIntoTextarea(getActiveTextLayer());
+
   const initialFontSize = Number(fontSize.value) || 14;
   document.documentElement.style.setProperty("--chat-font-size", initialFontSize + "px");
   document.documentElement.style.setProperty("--chat-text-padding", getTextPadding() + "px");
   updateTextPanelWidth();
   preview.classList.toggle("no-text-background", !backgroundToggle.checked);
+  getPreviewChromeTarget().classList.toggle("no-text-background", !backgroundToggle.checked);
   updateCanvasStageSize();
   updateBackgroundTransform();
   updateTextPosition();
@@ -7067,7 +7248,7 @@
   const siteTips = [
     "Atmosphere & Cinematic Filters: Try the <strong>Mood presets</strong> (Warm Sunset, Noir / B&W, High Contrast, Cold Night) along with <strong>Vignette</strong> and <strong>Film Grain</strong> in the top toolbar to give your RP screenshot cinematic immersion.",
     "Your customized canvas dimensions, fonts, outline styles, and censorship settings are automatically saved and remembered across visits.",
-    "Add images on top of the canvas via the Layers box or <strong>+ Add Image Layer</strong>. Drag on the canvas to move any layer, or use the mouse wheel to scale.",
+    "Add images with <strong>+ Add Image Layer</strong> and extra chat boxes with <strong>+ Add Chat Box</strong>. Drag on the canvas to move any layer, or use the mouse wheel to scale images.",
     "Highlight any text and press <strong>Ctrl+B</strong> (or click <strong>Blur Selection</strong>) to censor sensitive names, radio channels, or locations.",
     "Paste logs with <strong>!{#HEX}</strong> color codes. Wrap a word in slashes to italicize it: <strong>/quietly/</strong>. Timestamps are hidden in the preview. Select text and use <strong>Set Color</strong> (Ctrl+Shift+C) — the picker follows the current action color.",
     "Press <strong>Ctrl+Z</strong> to undo and <strong>Ctrl+Y</strong> to redo canvas edits. <strong>Ctrl+S</strong> saves a project file; <strong>Ctrl+O</strong> loads one.",
@@ -7076,7 +7257,7 @@
     "Press <strong>Ctrl+V</strong> anywhere to instantly paste screenshots or copied images directly onto the canvas as new layers.",
     "Drag and drop image files directly from your computer onto the canvas stage to add them as background or overlay graphics.",
     "Reorder layer depth with the <strong>▲</strong> and <strong>▼</strong> buttons in the Layers pane, toggle visibility with the eye icon, and adjust layer opacity.",
-    "Click and drag the chatlog text anywhere on the canvas to reposition it freely. Click <strong>Reset Text Position</strong> to restore default placement.",
+    "Click and drag any chat box on the canvas to move it. Add more with <strong>+ Add Chat Box</strong>. Click <strong>Reset Text Position</strong> to restore the selected chat box.",
     "Custom canvas sizing: Type any width and height into <strong>Canvas width / height</strong> to match 1080p, 1440p, 4K, or custom screenshot aspect ratios.",
     "Fine-tune the chat aesthetic with <strong>Outline style</strong> (Classic outline, Drop shadow, Both, or None) and adjust outline stroke thickness.",
     "Click <strong>Copy PNG</strong> to copy the rendered screenshot directly to your clipboard for instant pasting into Discord, forums, or editors.",
